@@ -1,0 +1,131 @@
+import { useState, useEffect } from "react";
+import {
+  Habit,
+  CreateHabitData,
+  CreateCompletionData,
+  ApiResponse,
+} from "@/types";
+
+export const useHabits = () => {
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchHabits = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch("/api/habits");
+      const data: ApiResponse<Habit[]> = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch habits");
+      }
+
+      setHabits(data.data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch habits");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createHabit = async (habitData: CreateHabitData) => {
+    try {
+      setError(null);
+
+      const response = await fetch("/api/habits", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(habitData),
+      });
+
+      const data: ApiResponse<Habit> = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create habit");
+      }
+
+      // Add new habit to the list
+      setHabits((prev) => [data.data!, ...prev]);
+      return data.data!;
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to create habit";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  const deleteHabit = async (habitId: string) => {
+    try {
+      setError(null);
+
+      const response = await fetch(`/api/habits/${habitId}`, {
+        method: "DELETE",
+      });
+
+      const data: ApiResponse = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete habit");
+      }
+
+      // Remove habit from the list
+      setHabits((prev) => prev.filter((habit) => habit.id !== habitId));
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete habit";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  const completeHabit = async (
+    habitId: string,
+    completionData?: CreateCompletionData
+  ) => {
+    try {
+      setError(null);
+
+      const response = await fetch(`/api/habits/${habitId}/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(completionData || {}),
+      });
+
+      const data: ApiResponse = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to complete habit");
+      }
+
+      // Refresh habits to get updated streak count
+      await fetchHabits();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to complete habit";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  useEffect(() => {
+    fetchHabits();
+  }, []);
+
+  return {
+    habits,
+    loading,
+    error,
+    fetchHabits,
+    createHabit,
+    deleteHabit,
+    completeHabit,
+  };
+};
