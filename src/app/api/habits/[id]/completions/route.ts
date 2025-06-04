@@ -44,13 +44,16 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Await params before accessing its properties
+    const { id } = await params;
+
     const body = await request.json();
     const { completedAt, notes } = createCompletionSchema.parse(body);
 
     // Check if habit exists and belongs to user
     const habit = await prisma.habit.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: user.id,
         isActive: true,
       },
@@ -71,7 +74,7 @@ export async function POST(
 
     const existingCompletion = await prisma.habitCompletion.findFirst({
       where: {
-        habitId: params.id,
+        habitId: id,
         completedAt: {
           gte: todayStart,
           lt: todayEnd,
@@ -89,7 +92,7 @@ export async function POST(
     // Create completion
     const completion = await prisma.habitCompletion.create({
       data: {
-        habitId: params.id,
+        habitId: id,
         completedAt: completedAt ? new Date(completedAt) : new Date(),
         notes,
       },
@@ -98,7 +101,7 @@ export async function POST(
     // Update habit streak and last completed
     const updatedHabit = await prisma.habit.update({
       where: {
-        id: params.id,
+        id: id,
       },
       data: {
         streakCount: habit.streakCount + 1,
@@ -140,10 +143,13 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Await params before accessing its properties
+    const { id } = await params;
+
     // Check if habit exists and belongs to user
     const habit = await prisma.habit.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: user.id,
       },
     });
@@ -154,7 +160,7 @@ export async function GET(
 
     const completions = await prisma.habitCompletion.findMany({
       where: {
-        habitId: params.id,
+        habitId: id,
       },
       orderBy: {
         completedAt: "desc",
