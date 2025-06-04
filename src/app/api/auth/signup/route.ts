@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { generateJWTToken } from "@/lib/jwt-auth";
 import { z } from "zod";
 
 const signupSchema = z.object({
@@ -48,12 +49,23 @@ export async function POST(request: NextRequest) {
         username: true,
         name: true,
         createdAt: true,
+        updatedAt: true,
       },
+    });
+
+    // Generate JWT token for React Native compatibility
+    const accessToken = generateJWTToken({
+      id: user.id,
+      email: user.email,
+      username: user.username,
     });
 
     return NextResponse.json({
       success: true,
-      data: user,
+      data: {
+        ...user,
+        accessToken, // Include token for React Native
+      },
       message: "User created successfully",
     });
   } catch (error) {

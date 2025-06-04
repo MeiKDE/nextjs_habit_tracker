@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { getUserFromJWT } from "@/lib/jwt-auth";
 import { getRandomColor } from "@/lib/habits";
 import { z } from "zod";
 
@@ -11,18 +12,40 @@ const createHabitSchema = z.object({
   frequency: z.enum(["DAILY", "WEEKLY", "MONTHLY"]),
 });
 
-// GET /api/habits - Get all habits for the authenticated user
-export async function GET() {
-  try {
-    const session = await getServerSession(authOptions);
+// Helper function to get user from either NextAuth session or JWT token
+async function getAuthenticatedUser(request: NextRequest) {
+  // Try JWT first (for React Native)
+  const jwtUser = await getUserFromJWT(request);
+  if (jwtUser) {
+    return jwtUser;
+  }
 
-    if (!session?.user?.id) {
+  // Fallback to NextAuth session (for web)
+  const session = await getServerSession(authOptions);
+  if (session?.user?.id) {
+    return {
+      id: session.user.id,
+      email: session.user.email!,
+      username: (session.user as any).username,
+      name: session.user.name,
+    };
+  }
+
+  return null;
+}
+
+// GET /api/habits - Get all habits for the authenticated user
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getAuthenticatedUser(request);
+
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const habits = await prisma.habit.findMany({
       where: {
-        userId: session.user.id,
+        userId: user.id,
         isActive: true,
       },
       include: {
@@ -53,9 +76,9 @@ export async function GET() {
 // POST /api/habits - Create a new habit
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = await getAuthenticatedUser(request);
 
-    if (!session?.user?.id) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -68,7 +91,7 @@ export async function POST(request: NextRequest) {
         description,
         frequency,
         color: getRandomColor(),
-        userId: session.user.id,
+        userId: user.id,
       },
       include: {
         completions: true,

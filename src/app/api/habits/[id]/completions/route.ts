@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { getUserFromJWT } from "@/lib/jwt-auth";
 import { z } from "zod";
 
 const createCompletionSchema = z.object({
@@ -9,15 +10,37 @@ const createCompletionSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
+// Helper function to get user from either NextAuth session or JWT token
+async function getAuthenticatedUser(request: NextRequest) {
+  // Try JWT first (for React Native)
+  const jwtUser = await getUserFromJWT(request);
+  if (jwtUser) {
+    return jwtUser;
+  }
+
+  // Fallback to NextAuth session (for web)
+  const session = await getServerSession(authOptions);
+  if (session?.user?.id) {
+    return {
+      id: session.user.id,
+      email: session.user.email!,
+      username: (session.user as any).username,
+      name: session.user.name,
+    };
+  }
+
+  return null;
+}
+
 // POST /api/habits/[id]/completions - Mark habit as complete
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = await getAuthenticatedUser(request);
 
-    if (!session?.user?.id) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -28,7 +51,7 @@ export async function POST(
     const habit = await prisma.habit.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: user.id,
         isActive: true,
       },
     });
@@ -111,9 +134,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = await getAuthenticatedUser(request);
 
-    if (!session?.user?.id) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -121,7 +144,7 @@ export async function GET(
     const habit = await prisma.habit.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: user.id,
       },
     });
 
