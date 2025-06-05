@@ -70,6 +70,8 @@ export async function POST(
       today.getMonth(),
       today.getDate()
     );
+
+    // It calculates the end of today, i.e., the same time as todayStart, but 24 hours later.
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
     const existingCompletion = await prisma.habitCompletion.findFirst({
