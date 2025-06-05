@@ -74,14 +74,21 @@ const Page = () => {
     }
   };
 
+  // Counts how many habits have at least one completion entry
+  // where the date matches today’s date.
   const completedToday = habits.filter((habit) =>
+    // checks if it has a completions array.
+    // uses .some() to check if any one of the completions matches today's date.
     habit.completions?.some((completion) => {
       const today = new Date();
       const completedAt = new Date(completion.completedAt);
       return completedAt.toDateString() === today.toDateString();
     })
-  ).length;
+  ).length; //takes count of those habits
 
+  //sum keeps track of the accumulated total.
+  // habit is the current habit being processed in the loop.
+  // 0 is the initial value of sum.
   const totalStreak = habits.reduce((sum, habit) => sum + habit.streakCount, 0);
 
   return (

@@ -7,18 +7,6 @@ export interface Todo {
   updatedAt: Date; // default as current date
 }
 
-export type TodoAddInput = {
-  title: string;
-  description?: string;
-};
-
-export type TodoUpdateInput = {
-  title: string;
-  description?: string;
-  completed: boolean;
-  updatedAt: Date;
-};
-
 export interface User {
   id: string;
   email: string;

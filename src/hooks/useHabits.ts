@@ -11,6 +11,7 @@ export const useHabits = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  //GET
   const fetchHabits = async () => {
     try {
       setLoading(true);
@@ -31,6 +32,7 @@ export const useHabits = () => {
     }
   };
 
+  // POST
   const createHabit = async (habitData: CreateHabitData) => {
     try {
       setError(null);
@@ -60,6 +62,7 @@ export const useHabits = () => {
     }
   };
 
+  // DELETE
   const deleteHabit = async (habitId: string) => {
     try {
       setError(null);

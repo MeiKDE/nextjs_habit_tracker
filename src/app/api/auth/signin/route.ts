@@ -9,7 +9,7 @@ const signinSchema = z.object({
   password: z.string().min(1),
 });
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || "your-secret-key";
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || "ilovedanielizaken";
 
 export async function POST(request: NextRequest) {
   try {

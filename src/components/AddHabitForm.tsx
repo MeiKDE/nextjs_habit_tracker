@@ -25,7 +25,7 @@ export default function AddHabitForm({
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // prevent refresh
 
     if (!title.trim()) {
       setError("Title is required");
@@ -54,6 +54,7 @@ export default function AddHabitForm({
     }
   };
 
+  // isOpen value is controlled by parent
   if (!isOpen) return null;
 
   return (
@@ -116,10 +117,12 @@ export default function AddHabitForm({
               Frequency
             </label>
             <div className="grid grid-cols-3 gap-2">
+              {/* Each button will take up 1 column (so 3 buttons in a row). */}
               {(["DAILY", "WEEKLY", "MONTHLY"] as const).map((freq) => (
                 <button
                   key={freq}
                   type="button"
+                  // frequency is set based on which button is clicked
                   onClick={() => setFrequency(freq)}
                   disabled={isSubmitting}
                   className={`py-2 px-4 rounded-lg font-medium transition-all ${
@@ -128,6 +131,7 @@ export default function AddHabitForm({
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
+                  {/* Button labels, more human-readable */}
                   {freq.charAt(0) + freq.slice(1).toLowerCase()}
                 </button>
               ))}
