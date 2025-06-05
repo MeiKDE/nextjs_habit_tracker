@@ -1,48 +1,90 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Example:
-// You have:
-// Your frontend app on https://myfrontend.com
-// Your backend API on https://myapi.com
-// If your frontend tries to fetch data from https://myapi.com, the browser sends a preflight request to myapi.com asking permission. If the backend replies:
-// http
-// Copy
-// Edit
-// Access-Control-Allow-Origin: https://myfrontend.com
-// Access-Control-Allow-Methods: GET, POST
-// Then the browser allows the frontend to fetch data.
+// Define allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000",
+  "http://localhost:8081", // Expo dev server
+  "exp://localhost:8081", // Expo development
+  // Add your production domains here
+  "https://yourapp.com",
+  "https://www.yourapp.com",
+];
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+
+  // Allow development origins in non-production
+  if (process.env.NODE_ENV !== "production") {
+    if (
+      origin.startsWith("http://localhost:") ||
+      origin.startsWith("exp://") ||
+      origin.startsWith("http://192.168.") ||
+      origin.startsWith("http://10.0.")
+    ) {
+      return true;
+    }
+  }
+
+  return ALLOWED_ORIGINS.includes(origin);
+}
 
 export function middleware(request: NextRequest) {
   // Handle CORS for API routes
   if (request.nextUrl.pathname.startsWith("/api/")) {
+    const origin = request.headers.get("origin");
+
     // Handle preflight requests
-    // check CORS permissions before the actual request.
     if (request.method === "OPTIONS") {
+      const allowOrigin = isAllowedOrigin(origin) ? origin! : "null";
+
       return new NextResponse(null, {
         status: 200,
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": allowOrigin,
           "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Access-Control-Allow-Headers":
+            "Content-Type, Authorization, X-Requested-With",
+          "Access-Control-Allow-Credentials": "true",
           "Access-Control-Max-Age": "86400",
+          Vary: "Origin",
         },
       });
     }
-    // For non-OPTIONS requests to /api/ routes,
-    // continue processing normally (let the request hit the API route handler).
-    // Handle actual requests
+
+    // Handle actual requests with security headers
     const response = NextResponse.next();
-    response.headers.set("Access-Control-Allow-Origin", "*");
+    const allowOrigin = isAllowedOrigin(origin) ? origin! : "null";
+
+    // CORS headers
+    response.headers.set("Access-Control-Allow-Origin", allowOrigin);
     response.headers.set(
       "Access-Control-Allow-Methods",
       "GET, POST, PUT, DELETE, OPTIONS"
     );
     response.headers.set(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization"
+      "Content-Type, Authorization, X-Requested-With"
     );
+    response.headers.set("Access-Control-Allow-Credentials", "true");
+    response.headers.set("Vary", "Origin");
+
+    // Security headers
+    response.headers.set("X-Content-Type-Options", "nosniff");
+    response.headers.set("X-Frame-Options", "DENY");
+    response.headers.set("X-XSS-Protection", "1; mode=block");
+    response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    response.headers.set(
+      "Permissions-Policy",
+      "geolocation=(), microphone=(), camera=()"
+    );
+
+    // Rate limiting headers
+    response.headers.set("X-RateLimit-Limit", "100");
+    response.headers.set("X-RateLimit-Remaining", "99");
+
     return response;
   }
+
   return NextResponse.next();
 }
 

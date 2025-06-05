@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"; // For handling requests/responses in App Router
 import bcrypt from "bcryptjs"; // For comparing hashed passwords
-import { generateJWTToken } from "@/lib/jwt-auth"; // Using centralized JWT function
+import { generateTokenPair } from "@/lib/jwt-auth"; // Using centralized JWT function with token pairs
 import { prisma } from "@/lib/prisma"; // DB connection (Prisma ORM)
 import { z } from "zod"; // Schema validation
 
@@ -41,14 +41,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate JWT token using centralized function
-    const accessToken = generateJWTToken({
+    // Generate secure token pair using centralized function
+    const tokenPair = generateTokenPair({
       id: user.id,
       email: user.email,
       username: user.username,
     });
 
-    // Return user data and token in consistent format
+    // Return user data and tokens in consistent format
     const userData = {
       id: user.id,
       email: user.email,
@@ -61,8 +61,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
+        user: userData,
+        accessToken: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken,
+        expiresIn: tokenPair.expiresIn,
+        // Legacy compatibility
         ...userData,
-        accessToken, // Include token for React Native compatibility
       },
       message: "Signed in successfully",
     });
