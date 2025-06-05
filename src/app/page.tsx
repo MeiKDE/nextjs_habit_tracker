@@ -6,6 +6,7 @@ import { Plus, LogOut, TrendingUp } from "lucide-react";
 import { useHabits } from "@/hooks/useHabits";
 import HabitCard from "@/components/HabitCard";
 import AddHabitForm from "@/components/AddHabitForm";
+import Navigation from "@/components/Navigation";
 import toast, { Toaster } from "react-hot-toast";
 
 const Page = () => {
@@ -75,7 +76,7 @@ const Page = () => {
   };
 
   // Counts how many habits have at least one completion entry
-  // where the date matches today’s date.
+  // where the date matches today's date.
   const completedToday = habits.filter((habit) =>
     // checks if it has a completions array.
     // uses .some() to check if any one of the completions matches today's date.
@@ -94,43 +95,32 @@ const Page = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
       <Toaster position="top-right" />
+      <Navigation />
 
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+      {/* Welcome Section */}
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">
-                Habit Tracker
-              </h1>
-              <p className="text-gray-600">
+              <h2 className="text-2xl font-bold text-gray-800">
                 Welcome back, {session?.user?.name || session?.user?.username}!
+              </h2>
+              <p className="text-gray-600">
+                Track your habits and build better routines
               </p>
             </div>
 
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="bg-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-600 transition-colors flex items-center gap-2"
-              >
-                <Plus size={20} />
-                Add Habit
-              </button>
-
-              <button
-                onClick={() => signOut()}
-                className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                title="Sign Out"
-              >
-                <LogOut size={20} />
-              </button>
-            </div>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="bg-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-600 transition-colors flex items-center gap-2"
+            >
+              <Plus size={20} />
+              Add Habit
+            </button>
           </div>
         </div>
-      </header>
 
-      {/* Stats */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <div className="flex items-center gap-3">

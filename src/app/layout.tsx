@@ -15,9 +15,6 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <header>
-            <h1 className="text-4xl text-center"> Habit Tracker App</h1>
-          </header>
           <main>{children}</main>
         </AuthProvider>
       </body>
