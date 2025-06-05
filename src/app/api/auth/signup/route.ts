@@ -11,6 +11,7 @@ const signupSchema = z.object({
   name: z.string().optional(),
 });
 
+// This is called when the client sends a signup POST request
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

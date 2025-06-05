@@ -1,16 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { prisma } from "@/lib/prisma";
-import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server"; // For handling requests/responses in App Router
+import bcrypt from "bcryptjs"; // For comparing hashed passwords
+import { generateJWTToken } from "@/lib/jwt-auth"; // Using centralized JWT function
+import { prisma } from "@/lib/prisma"; // DB connection (Prisma ORM)
+import { z } from "zod"; // Schema validation
 
 const signinSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
+  email: z.string().email(), // must be valid email format
+  password: z.string().min(1), // must be at least 1 character
 });
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || "ilovedanielizaken";
-
+// This is called when the client sends a signin/login POST request
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -42,18 +41,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate JWT token
-    const accessToken = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        username: user.username,
-      },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    // Generate JWT token using centralized function
+    const accessToken = generateJWTToken({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    });
 
-    // Return user data and token
+    // Return user data and token in consistent format
     const userData = {
       id: user.id,
       email: user.email,
@@ -66,8 +61,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        user: userData,
-        accessToken,
+        ...userData,
+        accessToken, // Include token for React Native compatibility
       },
       message: "Signed in successfully",
     });
@@ -78,7 +73,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
+    // Logs other errors and returns 500
     console.error("Signin error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
