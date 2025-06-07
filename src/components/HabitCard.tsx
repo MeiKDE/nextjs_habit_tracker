@@ -12,11 +12,7 @@ interface HabitCardProps {
   onDelete: (habitId: string) => Promise<void>;
 }
 
-export default function HabitCard({
-  habit,
-  onComplete,
-  onDelete,
-}: HabitCardProps) {
+const HabitCard = ({ habit, onComplete, onDelete }: HabitCardProps) => {
   const [isCompleting, setIsCompleting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -127,4 +123,6 @@ export default function HabitCard({
       )}
     </motion.div>
   );
-}
+};
+
+export default HabitCard;
