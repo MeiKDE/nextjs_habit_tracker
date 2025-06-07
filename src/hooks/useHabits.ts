@@ -21,7 +21,7 @@ export const useHabits = () => {
       const data: ApiResponse<Habit[]> = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch habits");
+        throw new Error(data.error || "HTTP - Failed to fetch habits");
       }
 
       setHabits(data.data || []);
@@ -35,6 +35,7 @@ export const useHabits = () => {
   // POST
   const createHabit = async (habitData: CreateHabitData) => {
     try {
+      setLoading(true);
       setError(null);
 
       const response = await fetch("/api/habits", {
@@ -48,7 +49,7 @@ export const useHabits = () => {
       const data: ApiResponse<Habit> = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create habit");
+        throw new Error(data.error || "HTTP - Failed to create habit");
       }
 
       // Add new habit to the list
@@ -59,12 +60,15 @@ export const useHabits = () => {
         err instanceof Error ? err.message : "Failed to create habit";
       setError(errorMessage);
       throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
   // DELETE
   const deleteHabit = async (habitId: string) => {
     try {
+      setLoading(true);
       setError(null);
 
       const response = await fetch(`/api/habits/${habitId}`, {
@@ -74,7 +78,7 @@ export const useHabits = () => {
       const data: ApiResponse = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to delete habit");
+        throw new Error(data.error || "HTTP - Failed to delete habit");
       }
 
       // Remove habit from the list
@@ -84,6 +88,8 @@ export const useHabits = () => {
         err instanceof Error ? err.message : "Failed to delete habit";
       setError(errorMessage);
       throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -92,6 +98,7 @@ export const useHabits = () => {
     completionData?: CreateCompletionData
   ) => {
     try {
+      setLoading(true);
       setError(null);
 
       const response = await fetch(`/api/habits/${habitId}/completions`, {
@@ -105,7 +112,7 @@ export const useHabits = () => {
       const data: ApiResponse = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to complete habit");
+        throw new Error(data.error || "HTTP - Failed to complete habit");
       }
 
       // Refresh habits to get updated streak count
@@ -115,6 +122,8 @@ export const useHabits = () => {
         err instanceof Error ? err.message : "Failed to complete habit";
       setError(errorMessage);
       throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
