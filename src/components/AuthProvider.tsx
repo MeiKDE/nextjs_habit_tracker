@@ -4,6 +4,7 @@
 import { SessionProvider } from "next-auth/react";
 
 // React component named AuthProvider that wraps your app (or part of it) with NextAuth's SessionProvider, making authentication session data available to any nested component.
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   return <SessionProvider>{children}</SessionProvider>;
-}
+};
+export default AuthProvider;

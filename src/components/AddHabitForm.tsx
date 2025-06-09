@@ -11,11 +11,7 @@ interface AddHabitFormProps {
   onClose: () => void;
 }
 
-export default function AddHabitForm({
-  onSubmit,
-  isOpen,
-  onClose,
-}: AddHabitFormProps) {
+const AddHabitForm = ({ onSubmit, isOpen, onClose }: AddHabitFormProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [frequency, setFrequency] = useState<"DAILY" | "WEEKLY" | "MONTHLY">(
@@ -172,4 +168,5 @@ export default function AddHabitForm({
       </motion.div>
     </div>
   );
-}
+};
+export default AddHabitForm;

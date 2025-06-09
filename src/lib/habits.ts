@@ -19,7 +19,7 @@ export const getRandomColor = (): string => {
 
 // Calculate streak data for a habit
 export const calculateStreakData = (
-  completions: HabitCompletion[]
+  completions: HabitCompletion[] //array of completed data
 ): StreakData => {
   if (completions.length === 0) {
     return { streak: 0, bestStreak: 0, total: 0 };
@@ -106,6 +106,7 @@ export const calculateStreakData = (
     (now.getTime() - lastCompletionDate.getTime()) / (1000 * 60 * 60 * 24);
 
   // → 0 <= 1.5 → true → activeStreak = currentStreak
+  // reset streak if over 1.5 days
   const activeStreak = daysSinceLastCompletion <= 1.5 ? currentStreak : 0;
 
   return {
