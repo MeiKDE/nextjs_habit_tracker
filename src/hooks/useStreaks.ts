@@ -48,6 +48,9 @@ export const useStreaks = () => {
     setLoading(true);
     setError(null);
 
+    // Calls two asynchronous functions: fetchHabits() and fetchCompletions()
+    // Waits for both to finish using Promise.all
+    // Returns a single Promise that resolves when both functions have completed
     try {
       await Promise.all([fetchHabits(), fetchCompletions()]);
     } catch (err) {

@@ -109,7 +109,10 @@ const AddHabitForm = ({ onSubmit, isOpen, onClose }: AddHabitFormProps) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label
+              htmlFor="frequency"
+              className="block text-sm font-medium text-gray-700 mb-3"
+            >
               Frequency
             </label>
             <div className="grid grid-cols-3 gap-2">
