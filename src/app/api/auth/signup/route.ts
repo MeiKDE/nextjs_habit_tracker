@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 import { generateJWTToken } from "@/lib/jwt-auth";
 import { z } from "zod";
@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
+    // Hash password with centralized Argon2id utility
+    const hashedPassword = await hashPassword(password);
 
     // Create user
     const user = await prisma.user.create({

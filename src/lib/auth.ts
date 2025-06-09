@@ -1,10 +1,9 @@
-import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "./prisma";
-import * as bcrypt from "bcryptjs";
+import { verifyPassword } from "./password";
 
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -28,9 +27,10 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
+        // Verify password using centralized Argon2id utility
+        const isPasswordValid = await verifyPassword(
+          user.password,
+          credentials.password
         );
 
         if (!isPasswordValid) {
@@ -47,22 +47,22 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as const,
   },
   pages: {
     signIn: "/auth/signin",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
-        token.username = (user as any).username;
+        token.username = user.username;
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (token) {
-        (session.user as any).id = token.sub!;
-        (session.user as any).username = token.username as string;
+        session.user.id = token.sub!;
+        session.user.username = token.username as string;
       }
       return session;
     },

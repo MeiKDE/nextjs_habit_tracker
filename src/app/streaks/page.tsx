@@ -6,10 +6,11 @@ import { motion } from "framer-motion";
 import { TrendingUp, Flame, Trophy, CheckCircle } from "lucide-react";
 import { useStreaks } from "@/hooks/useStreaks";
 import Navigation from "@/components/Navigation";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+import Link from "next/link";
 
 const StreaksPage = () => {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const { habits, rankedHabits, loading, error } = useStreaks();
 
   if (status === "loading") {
@@ -104,12 +105,12 @@ const StreaksPage = () => {
             <p className="text-gray-600 mb-6">
               Create your first habit to start building streaks!
             </p>
-            <a
+            <Link
               href="/"
               className="bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors"
             >
               Go to Habits
-            </a>
+            </Link>
           </div>
         ) : (
           <>

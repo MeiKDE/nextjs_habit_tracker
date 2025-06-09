@@ -1,13 +1,14 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { useSession, signOut } from "next-auth/react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, LogOut, TrendingUp } from "lucide-react";
+import React, { useState } from "react";
+import { useSession } from "next-auth/react";
+import { AnimatePresence } from "framer-motion";
+import { Plus, TrendingUp } from "lucide-react";
 import { useHabits } from "@/hooks/useHabits";
 import HabitCard from "@/components/HabitCard";
 import AddHabitForm from "@/components/AddHabitForm";
 import Navigation from "@/components/Navigation";
 import toast, { Toaster } from "react-hot-toast";
+import { CreateHabitData } from "@/types";
 
 const Page = () => {
   const { data: session, status } = useSession();
@@ -45,7 +46,7 @@ const Page = () => {
     );
   }
 
-  const handleCreateHabit = async (data: any) => {
+  const handleCreateHabit = async (data: CreateHabitData) => {
     try {
       await createHabit(data);
       toast.success("Habit created successfully!");
@@ -103,7 +104,8 @@ const Page = () => {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">
-                Welcome back, {session?.user?.name || session?.user?.username}!
+                Welcome back,{" "}
+                {session?.user?.name || (session?.user as any)?.username}!
               </h2>
               <p className="text-gray-600">
                 Track your habits and build better routines

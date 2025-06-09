@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
+import { Session } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { getUserFromJWT } from "@/lib/jwt-auth";
@@ -19,7 +20,7 @@ async function getAuthenticatedUser(request: NextRequest) {
   }
 
   // Fallback to NextAuth session (for web)
-  const session = await getServerSession(authOptions);
+  const session: Session | null = await getServerSession(authOptions);
   if (session?.user?.id) {
     return {
       id: session.user.id,
@@ -101,7 +102,7 @@ export async function POST(
     });
 
     // Update habit streak and last completed
-    const updatedHabit = await prisma.habit.update({
+    await prisma.habit.update({
       where: {
         id: id,
       },

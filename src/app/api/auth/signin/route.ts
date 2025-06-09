@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"; // For handling requests/responses in App Router
-import bcrypt from "bcryptjs"; // For comparing hashed passwords
+import { verifyPassword } from "@/lib/password"; // For verifying hashed passwords with Argon2id
 import { generateTokenPair } from "@/lib/jwt-auth"; // Using centralized JWT function with token pairs
 import { prisma } from "@/lib/prisma"; // DB connection (Prisma ORM)
 import { z } from "zod"; // Schema validation
@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Check password with centralized Argon2id utility
+    const isPasswordValid = await verifyPassword(user.password, password);
 
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       username: user.username,
     });
 
-    // Return user data and tokens in consistent format
+    // Return user data and tokens in format expected by React Native client
     const userData = {
       id: user.id,
       email: user.email,
