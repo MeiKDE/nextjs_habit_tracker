@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
-import { getUserFromJWT } from "@/lib/jwt-auth";
+import { ServerHabitsService } from "@/lib/habits-appwrite";
 import { z } from "zod";
 
 const updateHabitSchema = z.object({
@@ -10,76 +7,33 @@ const updateHabitSchema = z.object({
   description: z.string().max(500).optional(),
   frequency: z.enum(["DAILY", "WEEKLY", "MONTHLY"]).optional(),
   isActive: z.boolean().optional(),
+  userId: z.string().min(1),
 });
-
-// Helper function to get user from either NextAuth session or JWT token
-async function getAuthenticatedUser(request: NextRequest) {
-  // Try JWT first (for React Native)
-  const jwtUser = await getUserFromJWT(request);
-  if (jwtUser) {
-    return jwtUser;
-  }
-
-  // Fallback to NextAuth session (for web)
-  const session = await getServerSession(authOptions);
-  if (session?.user?.id) {
-    return {
-      id: session.user.id,
-      email: session.user.email!,
-      username: (session.user as any).username,
-      name: session.user.name,
-    };
-  }
-
-  return null;
-}
 
 // PUT /api/habits/[id] - Update a habit
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getAuthenticatedUser(request);
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+    const { id } = await params;
     const body = await request.json();
-    const updateData = updateHabitSchema.parse(body);
+    const { userId, ...updateData } = updateHabitSchema.parse(body);
 
-    // Check if habit exists and belongs to user
-    const existingHabit = await prisma.habit.findFirst({
-      where: {
-        id: params.id,
-        userId: user.id,
-      },
-    });
+    console.log("Updating habit:", id, "for user:", userId);
 
-    if (!existingHabit) {
-      return NextResponse.json({ error: "Habit not found" }, { status: 404 });
-    }
-
-    const updatedHabit = await prisma.habit.update({
-      where: {
-        id: params.id,
-      },
-      data: {
-        ...updateData,
-        updatedAt: new Date(),
-      },
-      include: {
-        completions: true,
-      },
-    });
+    const updatedHabit = await ServerHabitsService.updateHabit(
+      id,
+      userId,
+      updateData
+    );
 
     return NextResponse.json({
       success: true,
       data: updatedHabit,
       message: "Habit updated successfully",
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid input data", details: error.errors },
@@ -87,9 +41,13 @@ export async function PUT(
       );
     }
 
+    if (error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Habit not found" }, { status: 404 });
+    }
+
     console.error("Error updating habit:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error.message || "Internal server error" },
       { status: 500 }
     );
   }
@@ -98,46 +56,36 @@ export async function PUT(
 // DELETE /api/habits/[id] - Delete a habit
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getAuthenticatedUser(request);
+    const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User ID is required" },
+        { status: 400 }
+      );
     }
 
-    // Check if habit exists and belongs to user
-    const existingHabit = await prisma.habit.findFirst({
-      where: {
-        id: params.id,
-        userId: user.id,
-      },
-    });
+    console.log("Deleting habit:", id, "for user:", userId);
 
-    if (!existingHabit) {
-      return NextResponse.json({ error: "Habit not found" }, { status: 404 });
-    }
-
-    // Soft delete by setting isActive to false
-    await prisma.habit.update({
-      where: {
-        id: params.id,
-      },
-      data: {
-        isActive: false,
-        updatedAt: new Date(),
-      },
-    });
+    await ServerHabitsService.deleteHabit(id, userId);
 
     return NextResponse.json({
       success: true,
       message: "Habit deleted successfully",
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Habit not found" }, { status: 404 });
+    }
+
     console.error("Error deleting habit:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error.message || "Internal server error" },
       { status: 500 }
     );
   }

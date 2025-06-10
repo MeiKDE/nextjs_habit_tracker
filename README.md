@@ -1,10 +1,10 @@
 # Habit Tracker - Next.js Full-Stack Application
 
-A modern, full-stack habit tracking application built with Next.js, TypeScript, PostgreSQL, and Prisma. Converted from a React Native Expo app to a responsive web application with backend API.
+A modern, full-stack habit tracking application built with Next.js, TypeScript, and Appwrite. Converted from a React Native Expo app to a responsive web application with backend API.
 
 ## Features
 
-- 🔐 **Authentication** - Secure user registration and login with NextAuth.js
+- 🔐 **Authentication** - Secure user registration and login with Appwrite Auth
 - 📊 **Habit Management** - Create, track, and delete habits
 - 🔥 **Streak Tracking** - Visual streak counters and progress tracking
 - 📱 **Responsive Design** - Beautiful UI that works on all devices
@@ -15,9 +15,9 @@ A modern, full-stack habit tracking application built with Next.js, TypeScript, 
 ## Tech Stack
 
 - **Frontend**: Next.js 15, React 18, TypeScript
-- **Backend**: Next.js API Routes, Prisma ORM
-- **Database**: PostgreSQL
-- **Authentication**: NextAuth.js with credentials provider
+- **Backend**: Next.js API Routes, Appwrite
+- **Database**: Appwrite Database
+- **Authentication**: Appwrite Auth
 - **Styling**: Tailwind CSS
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
@@ -30,45 +30,31 @@ Before you begin, ensure you have the following installed:
 
 - Node.js (version 18 or higher)
 - npm or yarn
-- PostgreSQL (version 12 or higher)
+- An Appwrite account
 
-## Database Setup
+## Appwrite Setup
 
-### 1. Install PostgreSQL
+### 1. Create Appwrite Project
 
-**macOS (using Homebrew):**
+1. Go to [Appwrite Console](https://cloud.appwrite.io/console)
+2. Create a new project
+3. Note down your project ID
 
-```bash
-brew install postgresql
-brew services start postgresql
-```
+### 2. Configure Authentication
 
-**Windows:**
-Download and install from [PostgreSQL official website](https://www.postgresql.org/download/windows/)
+1. In your Appwrite project, go to "Auth" > "Settings"
+2. Enable "Email/Password" authentication
+3. Configure your authentication settings as needed
 
-**Linux (Ubuntu/Debian):**
+### 3. Create Database and Collections
 
-```bash
-sudo apt update
-sudo apt install postgresql postgresql-contrib
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
-```
-
-### 2. Create Database
+Run the provided script to automatically create the required collections:
 
 ```bash
-# Connect to PostgreSQL
-psql -U postgres
-
-# Create database and user
-CREATE DATABASE habit_tracker;
-CREATE USER habit_user WITH ENCRYPTED PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE habit_tracker TO habit_user;
-
-# Exit PostgreSQL
-\q
+node create-appwrite-collections.js
 ```
+
+Or manually create collections following the `APPWRITE_SETUP.md` guide.
 
 ## Installation
 
@@ -87,33 +73,23 @@ npm install
 Create a `.env.local` file in the root directory:
 
 ```bash
-# Database
-DATABASE_URL="postgresql://habit_user:your_password@localhost:5432/habit_tracker?schema=public"
+# Appwrite Configuration
+NEXT_PUBLIC_APPWRITE_ENDPOINT="https://cloud.appwrite.io/v1"
+NEXT_PUBLIC_APPWRITE_PROJECT_ID="your-project-id"
+NEXT_PUBLIC_APPWRITE_DATABASE_ID="your-database-id"
+APPWRITE_API_KEY="your-api-key"
 
-# NextAuth
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-super-secret-jwt-secret-change-this-in-production"
+# App Configuration
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
 **Important**:
 
-- Replace `your_password` with the actual password you set for the database user
-- Replace `your-super-secret-jwt-secret-change-this-in-production` with a secure random string
+- Replace `your-project-id` with your actual Appwrite project ID
+- Replace `your-database-id` with your Appwrite database ID
+- Replace `your-api-key` with your Appwrite API key
 
-### 3. Database Migration
-
-```bash
-# Generate Prisma client
-npm run db:generate
-
-# Push the schema to your database
-npm run db:push
-
-# Or use migrations (recommended for production)
-npm run db:migrate
-```
-
-### 4. Start Development Server
+### 3. Start Development Server
 
 ```bash
 npm run dev
@@ -127,17 +103,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
-- `npm run db:generate` - Generate Prisma client
-- `npm run db:push` - Push schema to database
-- `npm run db:migrate` - Run database migrations
-- `npm run db:studio` - Open Prisma Studio (database GUI)
 
 ## Project Structure
 
 ```
 nextjs-habit-tracker/
-├── prisma/
-│   └── schema.prisma          # Database schema
 ├── src/
 │   ├── app/                   # Next.js 13+ app directory
 │   │   ├── api/              # API routes
@@ -146,11 +116,16 @@ nextjs-habit-tracker/
 │   │   └── page.tsx          # Home page
 │   ├── components/           # React components
 │   ├── hooks/                # Custom React hooks
-│   ├── lib/                  # Utility functions
-│   └── types/                # TypeScript type definitions
-├── .env.local               # Environment variables
-├── package.json
-└── README.md
+│   ├── lib/                  # Utility functions and Appwrite config
+│   │   ├── appwrite.ts       # Appwrite client configuration
+│   │   ├── auth-appwrite.ts  # Authentication utilities
+│   │   └── habits-appwrite.ts # Habit management utilities
+│   ├── contexts/             # React contexts
+│   ├── types/                # TypeScript type definitions
+│   └── styles/               # Global styles
+├── public/                   # Static assets
+├── scripts/                  # Utility scripts
+└── package.json
 ```
 
 ## API Endpoints
@@ -158,7 +133,7 @@ nextjs-habit-tracker/
 ### Authentication
 
 - `POST /api/auth/signup` - User registration
-- `POST /api/auth/signin` - User login (handled by NextAuth)
+- `POST /api/auth/signin` - User login (handled by Appwrite)
 
 ### Habits
 
@@ -184,29 +159,13 @@ nextjs-habit-tracker/
 
 This application was converted from a React Native Expo app with the following improvements:
 
-- **Backend Integration**: Added full backend with PostgreSQL database
-- **Authentication**: Implemented secure authentication with NextAuth.js
+- **Backend Integration**: Added full backend with Appwrite database
+- **Authentication**: Implemented secure authentication with Appwrite Auth
 - **API Design**: RESTful API with proper error handling and validation
 - **Responsive Design**: Mobile-first design that works on all screen sizes
 - **Performance**: Optimized with Next.js features like SSR and API routes
 
-## Production Deployment
-
-### Database Setup
-
-1. Create a PostgreSQL database on your hosting provider
-2. Update `DATABASE_URL` in your production environment variables
-3. Run migrations: `npm run db:migrate`
-
-### Environment Variables
-
-Set the following in your production environment:
-
-```
-DATABASE_URL="your-production-database-url"
-NEXTAUTH_URL="https://your-domain.com"
-NEXTAUTH_SECRET="your-production-secret"
-```
+## Deployment
 
 ### Deploy to Vercel
 
@@ -218,19 +177,21 @@ npm i -g vercel
 vercel --prod
 ```
 
+Make sure to add your environment variables in the Vercel dashboard.
+
 ## Troubleshooting
 
-### Database Connection Issues
+### Appwrite Connection Issues
 
-- Ensure PostgreSQL is running
-- Check database credentials in `.env.local`
-- Verify database exists and user has proper permissions
+- Ensure your Appwrite project ID and endpoint are correct
+- Check that your API key has the necessary permissions
+- Verify your database and collections are properly configured
 
 ### Build Errors
 
-- Run `npm run db:generate` after schema changes
 - Clear `.next` folder and rebuild
 - Check for TypeScript errors with `npm run lint`
+- Ensure all environment variables are set correctly
 
 ## Contributing
 

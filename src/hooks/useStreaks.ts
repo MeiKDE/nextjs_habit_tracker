@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Habit, HabitCompletion, StreakData } from "@/types";
 import { calculateStreakData } from "@/lib/habits";
 
@@ -7,6 +8,7 @@ interface HabitWithStreakData extends Habit {
 }
 
 export const useStreaks = () => {
+  const { user } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [completions, setCompletions] = useState<HabitCompletion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -14,7 +16,13 @@ export const useStreaks = () => {
 
   const fetchHabits = useCallback(async () => {
     try {
-      const response = await fetch("/api/habits");
+      if (!user) {
+        throw new Error("Please sign in to continue.");
+      }
+
+      const response = await fetch(`/api/habits?userId=${user.$id}`, {
+        credentials: "include",
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -25,11 +33,17 @@ export const useStreaks = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch habits");
     }
-  }, []);
+  }, [user]);
 
   const fetchCompletions = useCallback(async () => {
     try {
-      const response = await fetch("/api/completions");
+      if (!user) {
+        throw new Error("Please sign in to continue.");
+      }
+
+      const response = await fetch(`/api/completions?userId=${user.$id}`, {
+        credentials: "include",
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -42,9 +56,15 @@ export const useStreaks = () => {
         err instanceof Error ? err.message : "Failed to fetch completions"
       );
     }
-  }, []);
+  }, [user]);
 
   const fetchData = useCallback(async () => {
+    if (!user) {
+      setHabits([]);
+      setCompletions([]);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -58,7 +78,7 @@ export const useStreaks = () => {
     } finally {
       setLoading(false);
     }
-  }, [fetchHabits, fetchCompletions]);
+  }, [fetchHabits, fetchCompletions, user]);
 
   useEffect(() => {
     fetchData();
@@ -67,7 +87,7 @@ export const useStreaks = () => {
   // Calculate streak data for each habit
   const habitsWithStreaks: HabitWithStreakData[] = habits.map((habit) => {
     const habitCompletions = completions.filter(
-      (completion) => completion.habitId === habit.id
+      (completion) => completion.habitId === habit.$id
     );
 
     const streakData = calculateStreakData(habitCompletions);

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"; // For handling requests/responses in App Router
-import { verifyPassword } from "@/lib/password"; // For verifying hashed passwords with Argon2id
-import { generateTokenPair } from "@/lib/jwt-auth"; // Using centralized JWT function with token pairs
-import { prisma } from "@/lib/prisma"; // DB connection (Prisma ORM)
+import { AuthService } from "@/lib/auth-appwrite"; // For Appwrite authentication
 import { z } from "zod"; // Schema validation
 
 const signinSchema = z.object({
@@ -17,71 +15,51 @@ export async function POST(request: NextRequest) {
     // Validate input
     const { email, password } = signinSchema.parse(body);
 
-    // Find user by email or username
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [{ email }, { username: email }],
-      },
+    // Sign in with Appwrite
+    const { user, session } = await AuthService.signIn(email, password);
+
+    console.log("Session created:", {
+      sessionId: session.$id,
+      userId: session.userId,
+      expire: session.expire,
     });
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "Invalid email/username or password" },
-        { status: 401 }
-      );
-    }
-
-    // Check password with centralized Argon2id utility
-    const isPasswordValid = await verifyPassword(user.password, password);
-
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: "Invalid email/username or password" },
-        { status: 401 }
-      );
-    }
-
-    // Generate secure token pair using centralized function
-    const tokenPair = generateTokenPair({
-      id: user.id,
-      email: user.email,
-      username: user.username,
-    });
-
-    // Return user data and tokens in format expected by React Native client
-    const userData = {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      name: user.name,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
-
-    return NextResponse.json({
+    // Set session cookie
+    const response = NextResponse.json({
       success: true,
       data: {
-        user: userData,
-        accessToken: tokenPair.accessToken,
-        refreshToken: tokenPair.refreshToken,
-        expiresIn: tokenPair.expiresIn,
-        // Legacy compatibility
-        ...userData,
+        $id: user.$id,
+        email: user.email,
+        username: user.username,
+        name: user.name,
       },
       message: "Signed in successfully",
     });
-  } catch (error) {
+
+    // Set httpOnly cookie for session - use session ID for server-side auth
+    response.cookies.set("appwrite-session", session.$id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
+      path: "/",
+    });
+
+    console.log("Setting session cookie with ID:", session.$id);
+
+    return response;
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid input data", details: error.errors },
         { status: 400 }
       );
     }
-    // Logs other errors and returns 500
+
     console.error("Signin error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: error.message || "Invalid credentials" },
+      { status: 401 }
     );
   }
 }

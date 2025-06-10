@@ -8,12 +8,12 @@ export interface Todo {
 }
 
 export interface User {
-  id: string;
+  $id: string;
   email: string;
   username: string;
   name?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateHabitData {
@@ -23,25 +23,25 @@ export interface CreateHabitData {
 }
 
 export interface Habit {
-  id: string;
+  $id: string;
   title: string;
   description?: string;
   frequency: "DAILY" | "WEEKLY" | "MONTHLY";
   streakCount: number;
-  lastCompleted?: Date;
+  lastCompleted?: string;
   color: string;
   isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   userId: string;
   completions?: HabitCompletion[];
 }
 
 export interface HabitCompletion {
-  id: string;
-  completedAt: Date;
+  $id: string;
+  completedAt: string;
   notes?: string;
-  createdAt: Date;
+  createdAt: string;
   habitId: string;
   habit?: Habit;
 }

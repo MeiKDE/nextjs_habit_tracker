@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { hashPassword } from "@/lib/password";
-import { prisma } from "@/lib/prisma";
-import { generateJWTToken } from "@/lib/jwt-auth";
+import { AuthService } from "@/lib/auth-appwrite";
 import { z } from "zod";
 
 const signupSchema = z.object({
@@ -20,56 +18,57 @@ export async function POST(request: NextRequest) {
     const { email, username, password, name } = signupSchema.parse(body);
 
     // Check if user already exists
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [{ email }, { username }],
-      },
-    });
+    const [emailAvailable, usernameAvailable] = await Promise.all([
+      AuthService.isEmailAvailable(email),
+      AuthService.isUsernameAvailable(username),
+    ]);
 
-    if (existingUser) {
+    if (!emailAvailable) {
       return NextResponse.json(
-        { error: "User with this email or username already exists" },
+        { error: "User with this email already exists" },
         { status: 400 }
       );
     }
 
-    // Hash password with centralized Argon2id utility
-    const hashedPassword = await hashPassword(password);
+    if (!usernameAvailable) {
+      return NextResponse.json(
+        { error: "Username is already taken" },
+        { status: 400 }
+      );
+    }
 
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        username,
-        password: hashedPassword,
-        name: name || username,
-      },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        name: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    // Create user with Appwrite
+    const { user, session } = await AuthService.signUp(
+      email,
+      password,
+      username,
+      name
+    );
 
-    // Generate JWT token for React Native compatibility
-    const accessToken = generateJWTToken({
-      id: user.id,
-      email: user.email,
-      username: user.username,
-    });
-
-    return NextResponse.json({
+    // Set session cookie
+    const response = NextResponse.json({
       success: true,
       data: {
-        ...user,
-        accessToken, // Include token for React Native
+        $id: user.$id,
+        email: user.email,
+        username: user.username,
+        name: user.name,
+        createdAt: user.createdAt,
       },
       message: "User created successfully",
     });
-  } catch (error) {
+
+    // Set httpOnly cookie for session - use session ID for server-side auth
+    response.cookies.set("appwrite-session", session.$id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
+      path: "/",
+    });
+
+    return response;
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid input data", details: error.errors },
@@ -79,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     console.error("Signup error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error.message || "Internal server error" },
       { status: 500 }
     );
   }

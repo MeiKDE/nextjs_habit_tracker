@@ -23,7 +23,7 @@ const HabitCard = ({ habit, onComplete, onDelete }: HabitCardProps) => {
 
     try {
       setIsCompleting(true);
-      await onComplete(habit.id);
+      await onComplete(habit.$id);
     } catch (error) {
       console.error("Error completing habit:", error);
     } finally {
@@ -36,7 +36,7 @@ const HabitCard = ({ habit, onComplete, onDelete }: HabitCardProps) => {
 
     try {
       setIsDeleting(true);
-      await onDelete(habit.id);
+      await onDelete(habit.$id);
     } catch (error) {
       console.error("Error deleting habit:", error);
       setIsDeleting(false);

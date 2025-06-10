@@ -3,10 +3,11 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, TrendingUp, LogOut } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navigation = () => {
   const pathname = usePathname();
+  const { signOut } = useAuth();
 
   const navItems = [
     {
@@ -20,6 +21,14 @@ const Navigation = () => {
       icon: TrendingUp,
     },
   ];
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
+  };
 
   return (
     <nav className="bg-white shadow-sm border-b">
@@ -52,7 +61,7 @@ const Navigation = () => {
           </div>
 
           <button
-            onClick={() => signOut()}
+            onClick={handleSignOut}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
             title="Sign Out"
           >

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/contexts/AuthContext";
 import { AnimatePresence } from "framer-motion";
 import { Plus, TrendingUp } from "lucide-react";
 import { useHabits } from "@/hooks/useHabits";
@@ -11,12 +11,18 @@ import toast, { Toaster } from "react-hot-toast";
 import { CreateHabitData } from "@/types";
 
 const Page = () => {
-  const { data: session, status } = useSession();
-  const { habits, loading, error, createHabit, deleteHabit, completeHabit } =
-    useHabits();
+  const { user, loading } = useAuth();
+  const {
+    habits,
+    loading: habitsLoading,
+    error,
+    createHabit,
+    deleteHabit,
+    completeHabit,
+  } = useHabits();
   const [showAddForm, setShowAddForm] = useState(false);
 
-  if (status === "loading") {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
@@ -27,7 +33,7 @@ const Page = () => {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
@@ -104,21 +110,22 @@ const Page = () => {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">
-                Welcome back,{" "}
-                {session?.user?.name || (session?.user as any)?.username}!
+                Welcome back, {user.name || user.username}!
               </h2>
               <p className="text-gray-600">
                 Track your habits and build better routines
               </p>
             </div>
 
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="bg-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-600 transition-colors flex items-center gap-2"
-            >
-              <Plus size={20} />
-              Add Habit
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="bg-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-600 transition-colors flex items-center gap-2"
+              >
+                <Plus size={20} />
+                Add Habit
+              </button>
+            </div>
           </div>
         </div>
 
@@ -179,7 +186,7 @@ const Page = () => {
             </div>
           )}
 
-          {loading ? (
+          {habitsLoading ? (
             <div className="text-center py-12">
               <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-gray-600">Loading habits...</p>
@@ -201,14 +208,14 @@ const Page = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <AnimatePresence>
                 {habits.map((habit) => (
                   <HabitCard
-                    key={habit.id}
+                    key={habit.$id}
                     habit={habit}
-                    onComplete={handleCompleteHabit}
-                    onDelete={handleDeleteHabit}
+                    onComplete={() => handleCompleteHabit(habit.$id)}
+                    onDelete={() => handleDeleteHabit(habit.$id)}
                   />
                 ))}
               </AnimatePresence>
@@ -220,8 +227,8 @@ const Page = () => {
       {/* Add Habit Form Modal */}
       <AddHabitForm
         isOpen={showAddForm}
-        onClose={() => setShowAddForm(false)}
         onSubmit={handleCreateHabit}
+        onClose={() => setShowAddForm(false)}
       />
     </div>
   );

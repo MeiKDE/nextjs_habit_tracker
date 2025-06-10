@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { TrendingUp, Flame, Trophy, CheckCircle } from "lucide-react";
 import { useStreaks } from "@/hooks/useStreaks";
@@ -10,10 +10,10 @@ import { Toaster } from "react-hot-toast";
 import Link from "next/link";
 
 const StreaksPage = () => {
-  const { status } = useSession();
+  const { user, loading: authLoading } = useAuth();
   const { habits, rankedHabits, loading, error } = useStreaks();
 
-  if (status === "loading") {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
@@ -24,7 +24,7 @@ const StreaksPage = () => {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
@@ -127,7 +127,7 @@ const StreaksPage = () => {
                 <div className="space-y-4">
                   {rankedHabits.slice(0, 3).map((habit, index) => (
                     <motion.div
-                      key={habit.id}
+                      key={habit.$id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
@@ -166,7 +166,7 @@ const StreaksPage = () => {
             <div className="space-y-4">
               {rankedHabits.map((habit, index) => (
                 <motion.div
-                  key={habit.id}
+                  key={habit.$id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: (index % 10) * 0.05 }}

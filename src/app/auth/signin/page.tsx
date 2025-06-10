@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
@@ -12,7 +12,9 @@ export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showTroubleshooting, setShowTroubleshooting] = useState(false);
   const router = useRouter();
+  const { signIn, forceRefresh } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,23 +22,34 @@ export default function SignInPage() {
     setError("");
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+      await signIn(email, password);
+      router.push("/");
+    } catch (error: any) {
+      setError(error.message || "Invalid email or password");
 
-      if (result?.error) {
-        setError("Invalid email or password");
-      } else {
-        // Check if sign in was successful
-        const session = await getSession();
-        if (session) {
-          router.push("/");
-        }
+      // Show troubleshooting options if login fails
+      if (
+        error.message?.includes("scope") ||
+        error.message?.includes("guest")
+      ) {
+        setShowTroubleshooting(true);
       }
-    } catch (error) {
-      setError("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClearSessions = async () => {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      await forceRefresh();
+      setShowTroubleshooting(false);
+      alert("Sessions cleared! Please try signing in again.");
+    } catch (error: any) {
+      setError("Sessions cleared. Please try signing in again.");
+      setShowTroubleshooting(false);
     } finally {
       setIsLoading(false);
     }
@@ -58,15 +71,15 @@ export default function SignInPage() {
               htmlFor="email"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Email or Username
+              Email
             </label>
             <input
-              type="text"
+              type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
-              placeholder="Enter your email or username"
+              placeholder="Enter your email"
               required
               disabled={isLoading}
             />
@@ -107,6 +120,26 @@ export default function SignInPage() {
             </div>
           )}
 
+          {showTroubleshooting && (
+            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-yellow-800 mb-2">
+                Login Issue Detected
+              </h3>
+              <p className="text-sm text-yellow-700 mb-3">
+                It looks like there might be an invalid session. Try clearing
+                all sessions and logging in again.
+              </p>
+              <button
+                type="button"
+                onClick={handleClearSessions}
+                disabled={isLoading}
+                className="bg-yellow-500 text-white px-4 py-2 text-sm rounded hover:bg-yellow-600 disabled:opacity-50"
+              >
+                Clear Sessions & Retry
+              </button>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={isLoading || !email || !password}
@@ -130,6 +163,15 @@ export default function SignInPage() {
               Sign up
             </Link>
           </p>
+
+          <div className="mt-4">
+            <Link
+              href="/debug"
+              className="text-xs text-gray-400 hover:text-gray-600 underline"
+            >
+              Having login issues? Try the debug page
+            </Link>
+          </div>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withAuth, isProtectedRoute } from "./lib/auth-middleware";
 
 // Define allowed origins for CORS
 const ALLOWED_ORIGINS = [
@@ -28,9 +29,19 @@ function isAllowedOrigin(origin: string | null): boolean {
   return ALLOWED_ORIGINS.includes(origin);
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Handle authentication for protected routes
+  if (isProtectedRoute(pathname)) {
+    const authResponse = await withAuth(request, { requireAuth: true });
+    if (authResponse.status === 302) {
+      return authResponse; // Redirect to signin
+    }
+  }
+
   // Handle CORS for API routes
-  if (request.nextUrl.pathname.startsWith("/api/")) {
+  if (pathname.startsWith("/api/")) {
     const origin = request.headers.get("origin");
 
     // Handle preflight requests
@@ -89,5 +100,12 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/api/:path*",
+  matcher: [
+    "/api/:path*",
+    "/dashboard/:path*",
+    "/habits/:path*",
+    "/profile/:path*",
+    "/settings/:path*",
+    "/streaks/:path*",
+  ],
 };

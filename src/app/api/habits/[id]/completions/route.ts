@@ -1,67 +1,82 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { Session } from "next-auth";
-import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
-import { getUserFromJWT } from "@/lib/jwt-auth";
+import { ServerHabitsService } from "@/lib/habits-appwrite";
+import {
+  serverDatabases,
+  DATABASE_ID,
+  COLLECTIONS,
+  Query,
+} from "@/lib/appwrite";
 import { z } from "zod";
 
 const createCompletionSchema = z.object({
   completedAt: z.string().optional(),
   notes: z.string().max(500).optional(),
+  userId: z.string().min(1),
 });
-
-// Helper function to get user from either NextAuth session or JWT token
-async function getAuthenticatedUser(request: NextRequest) {
-  // Try JWT first (for React Native)
-  const jwtUser = await getUserFromJWT(request);
-  if (jwtUser) {
-    return jwtUser;
-  }
-
-  // Fallback to NextAuth session (for web)
-  const session: Session | null = await getServerSession(authOptions);
-  if (session?.user?.id) {
-    return {
-      id: session.user.id,
-      email: session.user.email!,
-      username: (session.user as any).username,
-      name: session.user.name,
-    };
-  }
-
-  return null;
-}
 
 // POST /api/habits/[id]/completions - Mark habit as complete
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getAuthenticatedUser(request);
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Await params before accessing its properties
     const { id } = await params;
-
     const body = await request.json();
-    const { completedAt, notes } = createCompletionSchema.parse(body);
+    const { notes, userId } = createCompletionSchema.parse(body);
 
-    // Check if habit exists and belongs to user
-    const habit = await prisma.habit.findFirst({
-      where: {
-        id: id,
-        userId: user.id,
-        isActive: true,
-      },
-    });
+    console.log("Creating completion for habit:", id, "user:", userId);
 
-    if (!habit) {
-      return NextResponse.json({ error: "Habit not found" }, { status: 404 });
+    // First, verify that the habit exists and belongs to the user
+    try {
+      const habit = await serverDatabases.getDocument(
+        DATABASE_ID,
+        COLLECTIONS.HABITS,
+        id
+      );
+
+      if ((habit as any).userId !== userId) {
+        return NextResponse.json(
+          { error: "Habit not found or access denied" },
+          { status: 404 }
+        );
+      }
+
+      if (!(habit as any).isActive) {
+        return NextResponse.json(
+          { error: "Habit is no longer active" },
+          { status: 400 }
+        );
+      }
+
+      console.log("Habit verified successfully:", {
+        habitId: id,
+        title: (habit as any).title,
+        userId: (habit as any).userId,
+      });
+    } catch (error: any) {
+      console.error("Failed to verify habit:", {
+        habitId: id,
+        userId,
+        error: error.message,
+      });
+
+      if (
+        error.message.includes(
+          "Document with the requested ID could not be found"
+        )
+      ) {
+        return NextResponse.json(
+          {
+            error: `Habit with ID ${id} not found. Please refresh your habits and try again.`,
+          },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json(
+        { error: "Failed to verify habit access" },
+        { status: 500 }
+      );
     }
 
     // Check if already completed today
@@ -71,54 +86,62 @@ export async function POST(
       today.getMonth(),
       today.getDate()
     );
-
-    // It calculates the end of today, i.e., the same time as todayStart, but 24 hours later.
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
-    const existingCompletion = await prisma.habitCompletion.findFirst({
-      where: {
-        habitId: id,
-        completedAt: {
-          gte: todayStart,
-          lt: todayEnd,
-        },
-      },
-    });
+    const existingCompletions = await serverDatabases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.HABIT_COMPLETIONS,
+      [
+        Query.equal("habitId", id),
+        Query.greaterThanEqual("completedAt", todayStart.toISOString()),
+        Query.lessThan("completedAt", todayEnd.toISOString()),
+      ]
+    );
 
-    if (existingCompletion) {
+    if (existingCompletions.documents.length > 0) {
       return NextResponse.json(
         { error: "Habit already completed today" },
         { status: 400 }
       );
     }
 
-    // Create completion
-    const completion = await prisma.habitCompletion.create({
-      data: {
+    // Create completion using ServerHabitsService
+    try {
+      const completion = await ServerHabitsService.completeHabit(
+        id,
+        userId,
+        notes
+      );
+
+      return NextResponse.json({
+        success: true,
+        data: completion,
+        message: "Habit completed successfully",
+      });
+    } catch (error: any) {
+      console.error("ServerHabitsService.completeHabit failed:", {
         habitId: id,
-        completedAt: completedAt ? new Date(completedAt) : new Date(),
-        notes,
-      },
-    });
+        userId,
+        error: error.message,
+      });
 
-    // Update habit streak and last completed
-    await prisma.habit.update({
-      where: {
-        id: id,
-      },
-      data: {
-        streakCount: habit.streakCount + 1,
-        lastCompleted: completion.completedAt,
-        updatedAt: new Date(),
-      },
-    });
+      // If the habit is not found, return a more specific error
+      if (
+        error.message.includes(
+          "Document with the requested ID could not be found"
+        )
+      ) {
+        return NextResponse.json(
+          {
+            error: `Habit with ID ${id} not found. Please refresh and try again.`,
+          },
+          { status: 404 }
+        );
+      }
 
-    return NextResponse.json({
-      success: true,
-      data: completion,
-      message: "Habit completed successfully",
-    });
-  } catch (error) {
+      throw error; // Re-throw other errors to be handled by outer catch
+    }
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid input data", details: error.errors },
@@ -126,9 +149,13 @@ export async function POST(
       );
     }
 
+    if (error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Habit not found" }, { status: 404 });
+    }
+
     console.error("Error creating completion:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error.message || "Internal server error" },
       { status: 500 }
     );
   }
@@ -137,47 +164,34 @@ export async function POST(
 // GET /api/habits/[id]/completions - Get completions for a habit
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getAuthenticatedUser(request);
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User ID is required" },
+        { status: 400 }
+      );
     }
 
-    // Await params before accessing its properties
     const { id } = await params;
 
-    // Check if habit exists and belongs to user
-    const habit = await prisma.habit.findFirst({
-      where: {
-        id: id,
-        userId: user.id,
-      },
-    });
+    console.log("Fetching completions for habit:", id, "user:", userId);
 
-    if (!habit) {
-      return NextResponse.json({ error: "Habit not found" }, { status: 404 });
-    }
-
-    const completions = await prisma.habitCompletion.findMany({
-      where: {
-        habitId: id,
-      },
-      orderBy: {
-        completedAt: "desc",
-      },
-    });
+    // Get completions using ServerHabitsService
+    const completions = await ServerHabitsService.getHabitCompletions(id);
 
     return NextResponse.json({
       success: true,
       data: completions,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching completions:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error.message || "Internal server error" },
       { status: 500 }
     );
   }

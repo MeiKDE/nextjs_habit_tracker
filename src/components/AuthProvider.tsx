@@ -1,10 +1,10 @@
 "use client";
 
-// SessionProvider gives your app access to session/auth data via React Context.
-import { SessionProvider } from "next-auth/react";
+import { AuthProvider as AppwriteAuthProvider } from "@/contexts/AuthContext";
 
-// React component named AuthProvider that wraps your app (or part of it) with NextAuth's SessionProvider, making authentication session data available to any nested component.
+// AuthProvider that wraps your app with Appwrite authentication context
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  return <SessionProvider>{children}</SessionProvider>;
+  return <AppwriteAuthProvider>{children}</AppwriteAuthProvider>;
 };
+
 export default AuthProvider;
