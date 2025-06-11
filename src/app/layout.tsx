@@ -1,4 +1,5 @@
 import "@/styles/globals.css";
+import "@/lib/passive-events";
 import { Inter } from "next/font/google";
 import { Metadata } from "next";
 import { AuthProvider } from "@/contexts/AuthContext";

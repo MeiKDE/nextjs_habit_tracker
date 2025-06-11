@@ -2,13 +2,15 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { account } from "@/lib/appwrite";
+import { isGuestUserError, completeAuthReset } from "@/lib/session-utils";
 
 const DebugPage = () => {
-  const { user, loading, signIn } = useAuth();
+  const { user, loading, signIn, clearSessions } = useAuth();
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [status, setStatus] = useState<string>("");
   const [showSignIn, setShowSignIn] = useState(false);
   const [credentials, setCredentials] = useState({ email: "", password: "" });
+  const [isLoading, setIsLoading] = useState(false);
 
   const checkClientSession = async () => {
     try {
@@ -99,38 +101,15 @@ const DebugPage = () => {
   };
 
   const clearAllSessions = async () => {
+    setIsLoading(true);
+    setStatus("");
     try {
-      setStatus("Clearing all sessions...");
-
-      // Clear client sessions
-      try {
-        await account.deleteSessions();
-        console.log("Client sessions cleared");
-      } catch (error) {
-        console.log("No client sessions to clear or already cleared");
-      }
-
-      // Clear server session cookie
-      await fetch("/api/auth/session", {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      setDebugInfo((prev: any) => ({
-        ...prev,
-        sessionsClearedAt: new Date().toISOString(),
-      }));
-
-      setStatus("All sessions cleared. Please sign in again.");
-
-      // Refresh the page to reset auth state
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      await clearSessions();
+      setStatus("✅ All sessions (Appwrite + JWT) cleared successfully");
     } catch (error: any) {
-      console.error("Clear sessions error:", error);
-      setStatus("Session cleanup completed (some errors expected)");
+      setStatus(`❌ Error clearing all sessions: ${error.message}`);
     }
+    setIsLoading(false);
   };
 
   const forceReauth = async () => {
@@ -188,6 +167,98 @@ const DebugPage = () => {
       setTimeout(() => runFullDiagnostic(), 1000);
     } catch (error: any) {
       setStatus("Sign in failed: " + error.message);
+    }
+  };
+
+  const checkAppwriteSession = async () => {
+    setIsLoading(true);
+    setStatus("");
+    try {
+      const currentUser = await account.get();
+      setStatus(
+        `✅ Found Appwrite session for: ${currentUser.email} (ID: ${currentUser.$id})`
+      );
+    } catch (error: any) {
+      // Handle guest user errors gracefully
+      if (isGuestUserError(error)) {
+        setStatus("❌ No active Appwrite session found (user is guest)");
+      } else {
+        setStatus(`❌ Error checking session: ${error.message}`);
+      }
+    }
+    setIsLoading(false);
+  };
+
+  const clearAppwriteSessions = async () => {
+    setIsLoading(true);
+    setStatus("");
+    try {
+      await account.deleteSessions();
+      setStatus("✅ All Appwrite sessions cleared successfully");
+    } catch (error: any) {
+      // Handle guest user errors gracefully
+      if (isGuestUserError(error)) {
+        setStatus("❌ No sessions to clear (user is guest)");
+      } else {
+        setStatus(`❌ Error clearing sessions: ${error.message}`);
+      }
+    }
+    setIsLoading(false);
+  };
+
+  const testSignIn = async () => {
+    setIsLoading(true);
+    setStatus("");
+
+    const email = (document.getElementById("email") as HTMLInputElement)?.value;
+    const password = (document.getElementById("password") as HTMLInputElement)
+      ?.value;
+
+    if (!email || !password) {
+      setStatus("❌ Please enter email and password");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Try to create a session directly
+      const session = await account.createEmailPasswordSession(email, password);
+      setStatus(
+        `✅ Direct Appwrite session created successfully: ${session.$id}`
+      );
+    } catch (error: any) {
+      if (error.type === "user_session_already_exists") {
+        setStatus(`❌ Session conflict error: ${error.message}`);
+      } else {
+        setStatus(`❌ Sign in error: ${error.message}`);
+      }
+    }
+    setIsLoading(false);
+  };
+
+  const completeReset = async () => {
+    setIsLoading(true);
+    setStatus("Starting complete authentication reset...");
+
+    try {
+      const result = await completeAuthReset();
+
+      if (result.success) {
+        setStatus("✅ Complete authentication reset successful");
+        console.log("Reset steps:", result.steps);
+      } else {
+        setStatus("⚠️ Authentication reset completed with some issues");
+        console.log("Reset steps with issues:", result.steps);
+      }
+
+      // Refresh the page after reset
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (error: any) {
+      setStatus(`❌ Complete reset failed: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -336,6 +407,117 @@ const DebugPage = () => {
             </pre>
           </div>
         )}
+
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Session Management</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <button
+              onClick={checkAppwriteSession}
+              disabled={isLoading}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+            >
+              Check Appwrite Session
+            </button>
+            <button
+              onClick={clearAppwriteSessions}
+              disabled={isLoading}
+              className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 disabled:opacity-50"
+            >
+              Clear Appwrite Sessions
+            </button>
+            <button
+              onClick={clearAllSessions}
+              disabled={isLoading}
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 disabled:opacity-50"
+            >
+              Clear All Sessions
+            </button>
+            <button
+              onClick={completeReset}
+              disabled={isLoading}
+              className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900 disabled:opacity-50"
+            >
+              🔄 Complete Reset
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Test Direct Sign In</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Enter your email"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Enter your password"
+              />
+            </div>
+            <button
+              onClick={testSignIn}
+              disabled={isLoading}
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50"
+            >
+              Test Direct Appwrite Sign In
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4 text-blue-800">
+            How to use this debug page
+          </h2>
+          <div className="space-y-2 text-blue-700">
+            <p>
+              1. <strong>Check Appwrite Session:</strong> See if there's an
+              active Appwrite session
+            </p>
+            <p>
+              2. <strong>Clear Appwrite Sessions:</strong> Clear only Appwrite
+              sessions
+            </p>
+            <p>
+              3. <strong>Clear All Sessions:</strong> Clear both Appwrite and
+              JWT sessions
+            </p>
+            <p>
+              4. <strong>Complete Reset:</strong> Clear everything - Appwrite
+              sessions, browser storage, cookies, and JWT tokens (most thorough)
+            </p>
+            <p>
+              5. <strong>Test Direct Sign In:</strong> Try to create an Appwrite
+              session directly to reproduce the error
+            </p>
+          </div>
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <p className="text-yellow-800">
+              <strong>If you get the session conflict error:</strong> Use
+              "Complete Reset" first for the most thorough cleanup, then try
+              signing in again.
+            </p>
+          </div>
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+            <p className="text-green-800">
+              <strong>Recommended workflow:</strong> Use "Complete Reset" → wait
+              for page reload → try sign in. This handles all possible sources
+              of session conflicts.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

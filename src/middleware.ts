@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuth, isProtectedRoute } from "./lib/auth-middleware";
+import { AuthMiddleware, isProtectedRoute } from "./lib/auth-middleware";
 
 // Define allowed origins for CORS
 const ALLOWED_ORIGINS = [
@@ -34,9 +34,14 @@ export async function middleware(request: NextRequest) {
 
   // Handle authentication for protected routes
   if (isProtectedRoute(pathname)) {
-    const authResponse = await withAuth(request, { requireAuth: true });
-    if (authResponse.status === 302) {
-      return authResponse; // Redirect to signin
+    const auth = await AuthMiddleware.requireAuth(request);
+
+    if (!auth.isAuthenticated) {
+      // Redirect to signin for protected routes
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/signin";
+      url.searchParams.set("redirectTo", pathname);
+      return NextResponse.redirect(url);
     }
   }
 

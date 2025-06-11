@@ -21,6 +21,8 @@ export const client = new Client()
 
 // Client-side services
 export const account = new Account(client);
+console.log("🔍 Appwrite account object created and exported");
+
 export const databases = new Databases(client);
 
 // Server-side configuration
