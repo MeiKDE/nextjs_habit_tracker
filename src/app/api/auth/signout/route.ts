@@ -1,24 +1,41 @@
-import { NextResponse } from "next/server";
-import { AuthService } from "@/lib/auth-appwrite";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST() {
+// POST /api/auth/signout - Sign out user by clearing cookies
+export async function POST(request: NextRequest) {
   try {
-    // Sign out from Appwrite
-    await AuthService.signOut();
+    console.log("User signing out, clearing cookies");
 
-    // Clear session cookie
     const response = NextResponse.json({
       success: true,
       message: "Signed out successfully",
     });
 
-    response.cookies.delete("appwrite-session");
+    // Clear the JWT token cookies
+    response.cookies.set("auth-token", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      expires: new Date(0), // Expire immediately
+      path: "/",
+    });
+
+    response.cookies.set("appwrite-session", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      expires: new Date(0), // Expire immediately
+      path: "/",
+    });
 
     return response;
   } catch (error: any) {
     console.error("Signout error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to sign out" },
+      {
+        success: false,
+        error: error.message || "Failed to sign out",
+        message: "Sign out failed",
+      },
       { status: 500 }
     );
   }

@@ -21,7 +21,7 @@ export const useHabits = () => {
     throw new Error(data.error || "Request failed");
   };
 
-  //GET
+  //GET - Now uses JWT authentication from cookies
   const fetchHabits = async (retryCount = 0) => {
     try {
       if (!user) {
@@ -31,9 +31,12 @@ export const useHabits = () => {
       setLoading(true);
       setError(null);
 
-      console.log("Fetching habits for user:", user.$id);
-      const response = await fetch(`/api/habits?userId=${user.$id}`, {
+      console.log("Fetching habits for authenticated user");
+      const response = await fetch(`/api/habits`, {
         credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
       const data: ApiResponse<Habit[]> = await response.json();
 
@@ -53,7 +56,7 @@ export const useHabits = () => {
     }
   };
 
-  // POST
+  // POST - Now uses JWT authentication, no userId needed
   const createHabit = async (habitData: CreateHabitData) => {
     try {
       if (!user) {
@@ -70,7 +73,7 @@ export const useHabits = () => {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({ ...habitData, userId: user.$id }),
+        body: JSON.stringify(habitData), // Remove userId - it comes from JWT
       });
 
       const data: ApiResponse<Habit> = await response.json();
@@ -95,7 +98,7 @@ export const useHabits = () => {
     }
   };
 
-  // DELETE
+  // DELETE - Now uses JWT authentication, no userId needed
   const deleteHabit = async (habitId: string) => {
     try {
       if (!user) {
@@ -105,13 +108,13 @@ export const useHabits = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(
-        `/api/habits/${habitId}?userId=${user.$id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`/api/habits/${habitId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       const data: ApiResponse = await response.json();
 
@@ -149,7 +152,7 @@ export const useHabits = () => {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({ ...completionData, userId: user.$id }),
+        body: JSON.stringify(completionData || {}), // Remove userId - it comes from JWT
       });
 
       const data: ApiResponse = await response.json();
