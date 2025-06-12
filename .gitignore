@@ -17,6 +17,7 @@ yarn.lock
 build/
 dist/
 out/
+.next/
 
 # IDE and editor files
 .vscode/
@@ -70,9 +71,6 @@ coverage/
 .cache
 .parcel-cache
 
-# next.js build output
-.next
-
 # nuxt.js build output
 .nuxt
 
@@ -92,4 +90,36 @@ coverage/
 .tern-port
 
 # Stores VSCode versions used for testing VSCode extensions
-.vscode-test 
+.vscode-test
+
+# Production-specific ignores
+# Sensitive files
+*.key
+*.pem
+*.p12
+*.p8
+*.mobileprovision
+*.jks
+
+# Debug and development files
+debug/
+scripts/setup-*.js
+scripts/test-*.js
+*-debug.js
+*-test.js
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Backup files
+*.bak
+*.backup
+
+# App store and deployment files
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output 
