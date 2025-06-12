@@ -163,15 +163,6 @@ export default function SignInPage() {
               Sign up
             </Link>
           </p>
-
-          <div className="mt-4">
-            <Link
-              href="/debug"
-              className="text-xs text-gray-400 hover:text-gray-600 underline"
-            >
-              Having login issues? Try the debug page
-            </Link>
-          </div>
         </div>
       </div>
     </div>
