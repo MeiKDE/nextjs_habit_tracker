@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { TrendingUp, Flame, Trophy, CheckCircle } from "lucide-react";
@@ -8,6 +8,7 @@ import { useStreaks } from "@/hooks/useStreaks";
 import Navigation from "@/components/Navigation";
 import { Toaster } from "react-hot-toast";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const streakTips = [
   "Consistency beats perfection - focus on showing up daily",
@@ -18,34 +19,19 @@ const streakTips = [
 
 const StreaksPage = () => {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const { habits, rankedHabits, loading, error } = useStreaks();
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/login");
+    }
+  }, [user, authLoading, router]);
 
-  if (!user) {
+  if (authLoading || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            Welcome to Habit Tracker
-          </h1>
-          <p className="text-gray-600 mb-8">Please sign in to continue</p>
-          <a
-            href="/auth/signin"
-            className="bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors"
-          >
-            Sign In
-          </a>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
       </div>
     );
   }

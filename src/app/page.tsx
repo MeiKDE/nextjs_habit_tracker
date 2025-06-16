@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import Navigation from "@/components/Navigation";
 import { Plus, TrendingUp } from "lucide-react";
@@ -10,9 +10,11 @@ import HabitCard from "@/components/HabitCard";
 import AddHabitForm from "@/components/AddHabitForm";
 import { HabitsService } from "@/lib/habits-appwrite";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
   const { user, loading } = useAuth();
+  const router = useRouter();
   const [reloadHabits, setReloadHabits] = useState(0);
   const {
     habits,
@@ -23,17 +25,18 @@ const Page = () => {
   } = useHabits(reloadHabits);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         Loading...
       </div>
     );
-  }
-
-  if (!user) {
-    // Show login UI (already handled on your main page)
-    return null;
   }
 
   const completedToday = habits.filter((habit) =>
