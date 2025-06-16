@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const signOut = async () => {
-    await account.deleteSessions();
+    await account.deleteSession("current");
     setUser(null);
   };
 
