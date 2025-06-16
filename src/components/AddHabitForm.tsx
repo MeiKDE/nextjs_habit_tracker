@@ -38,44 +38,62 @@ const AddHabitForm: React.FC<AddHabitFormProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg"
+        className="bg-white rounded-2xl p-8 w-full max-w-md shadow-lg"
       >
-        <h2 className="text-xl font-bold mb-4">Add New Habit</h2>
+        <h2 className="text-2xl font-bold mb-6 text-slate-800">
+          Add New Habit
+        </h2>
         <input
-          className="w-full border rounded px-3 py-2 mb-3"
+          className="w-full border border-slate-200 rounded-xl px-4 py-3 mb-4 text-base text-slate-800 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none"
           placeholder="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
         />
         <textarea
-          className="w-full border rounded px-3 py-2 mb-3"
+          className="w-full border border-slate-200 rounded-xl px-4 py-3 mb-4 text-base text-slate-800 min-h-[80px] focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none"
           placeholder="Description (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        <select
-          className="w-full border rounded px-3 py-2 mb-4"
-          value={frequency}
-          onChange={(e) => setFrequency(e.target.value as any)}
-        >
-          <option value="DAILY">Daily</option>
-          <option value="WEEKLY">Weekly</option>
-          <option value="MONTHLY">Monthly</option>
-        </select>
-        <div className="flex justify-end gap-2">
+        <div className="mb-6">
+          <label className="block text-base font-semibold text-slate-800 mb-2">
+            Frequency
+          </label>
+          <div className="flex gap-3">
+            {["DAILY", "WEEKLY", "MONTHLY"].map((freq) => (
+              <button
+                key={freq}
+                type="button"
+                className={`flex-1 bg-white rounded-xl border py-3 items-center transition-colors duration-150 ${
+                  frequency === freq
+                    ? "bg-violet-50 border-violet-500"
+                    : "border-slate-200"
+                }`}
+                onClick={() => setFrequency(freq as any)}
+              >
+                <span
+                  className={`text-base font-medium ${frequency === freq ? "text-violet-600 font-semibold" : "text-slate-500"}`}
+                >
+                  {freq.charAt(0) + freq.slice(1).toLowerCase()}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
           <button
             type="button"
-            className="px-4 py-2 rounded bg-gray-200"
+            className="px-4 py-2 rounded-xl bg-gray-200 text-slate-700 font-medium hover:bg-gray-300 transition-colors"
             onClick={onClose}
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 rounded bg-purple-500 text-white"
+            className="px-6 py-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 text-white font-semibold shadow-lg hover:from-violet-600 hover:to-purple-600 transition-colors"
           >
-            Add
+            Create Habit
           </button>
         </div>
       </form>

@@ -9,6 +9,13 @@ import Navigation from "@/components/Navigation";
 import { Toaster } from "react-hot-toast";
 import Link from "next/link";
 
+const streakTips = [
+  "Consistency beats perfection - focus on showing up daily",
+  "Track your progress to stay motivated",
+  "Celebrate small wins along the way",
+  "Don't break the chain!",
+];
+
 const StreaksPage = () => {
   const { user, loading: authLoading } = useAuth();
   const { habits, rankedHabits, loading, error } = useStreaks();
@@ -72,162 +79,203 @@ const StreaksPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
       <Toaster position="top-right" />
-      <Navigation />
+      <Navigation>
+        <Link
+          href="/"
+          className="px-4 py-2 bg-violet-100 text-violet-700 rounded hover:bg-violet-200 transition-colors font-medium"
+        >
+          Home
+        </Link>
+      </Navigation>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <TrendingUp className="text-purple-600" size={32} />
-            <h1 className="text-3xl font-bold text-gray-800">Habit Streaks</h1>
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="flex items-center gap-4 mb-8">
+          <Flame className="text-orange-400" size={40} />
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800 mb-1">
+              Habit Streaks
+            </h1>
+            <p className="text-base text-slate-500">
+              Track your consistency and progress
+            </p>
           </div>
-          <p className="text-gray-600">
-            Track your consistency and celebrate your progress
-          </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6">
             {error}
           </div>
         )}
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading streaks...</p>
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-slate-600 font-medium">Loading streaks...</p>
           </div>
         ) : habits.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🎯</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-              No habits yet
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-6">
+              <span className="text-4xl">📈</span>
+            </div>
+            <h3 className="text-xl font-semibold text-slate-800 mb-2">
+              No streaks yet
             </h3>
-            <p className="text-gray-600 mb-6">
-              Create your first habit to start building streaks!
+            <p className="text-slate-500 text-center mb-6 max-w-xs">
+              Complete some habits to start building your streaks!
             </p>
             <Link
               href="/"
-              className="bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors"
+              className="bg-violet-500 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-violet-600 transition-colors shadow-lg"
             >
               Go to Habits
             </Link>
           </div>
         ) : (
           <>
-            {/* Top Streaks Section */}
+            {/* Top Performers Section */}
             {rankedHabits.length > 0 && (
-              <div className="bg-white rounded-xl p-6 shadow-sm mb-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <Trophy className="text-purple-600" size={24} />
-                  <span className="text-lg font-bold text-gray-800">
-                    🏅 Top Streaks
+              <div className="mb-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <Trophy className="text-amber-400" size={28} />
+                  <span className="text-xl font-semibold text-slate-800">
+                    Top Performers
                   </span>
                 </div>
-
-                <div className="space-y-4">
+                <div className="flex flex-col gap-3">
                   {rankedHabits.slice(0, 3).map((habit, index) => (
-                    <motion.div
+                    <div
                       key={habit.$id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      className="bg-white flex flex-row items-center p-4 rounded-2xl shadow-sm border border-gray-100"
                     >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${getRankColor(
-                            index
-                          )}`}
-                        >
+                      <div className="items-center mr-4 flex flex-col">
+                        <span className="text-2xl mb-1">
                           {getRankIcon(index)}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-800">
-                            {habit.title}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {habit.description}
-                          </p>
-                        </div>
+                        </span>
+                        <span className="text-sm font-bold text-slate-500">
+                          {index + 1}
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-purple-600">
-                          {habit.streakData.bestStreak}
-                        </div>
-                        <div className="text-xs text-gray-500">Best Streak</div>
+                      <div className="flex-1">
+                        <span className="text-base font-semibold text-slate-800 mb-1 block">
+                          {habit.title}
+                        </span>
+                        <span className="text-sm text-slate-500 block">
+                          Best streak: {habit.streakData.bestStreak} days
+                        </span>
                       </div>
-                    </motion.div>
+                      <div className="flex flex-row items-center gap-1 bg-amber-100 px-2 py-1 rounded-lg">
+                        <Flame size={16} className="text-orange-400" />
+                        <span className="text-sm font-bold text-amber-600">
+                          {habit.streakData.streak}
+                        </span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* All Habits Streaks */}
-            <div className="space-y-4">
-              {rankedHabits.map((habit, index) => (
-                <motion.div
-                  key={habit.$id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: (index % 10) * 0.05 }}
-                  className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                        {habit.title}
-                      </h3>
-                      {habit.description && (
-                        <p className="text-gray-600 text-sm mb-3">
-                          {habit.description}
-                        </p>
-                      )}
+            {/* All Habits Section */}
+            <div className="mb-10">
+              <div className="flex items-center gap-3 mb-4">
+                <TrendingUp className="text-violet-500" size={24} />
+                <span className="text-xl font-semibold text-slate-800">
+                  All Habits
+                </span>
+              </div>
+              <div className="flex flex-col gap-4">
+                {rankedHabits.map((habit) => (
+                  <div
+                    key={habit.$id}
+                    className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100"
+                  >
+                    <div className="flex flex-row items-center mb-4">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center mr-3"
+                        style={{
+                          backgroundColor: (habit.color || "#ddd") + "20",
+                        }}
+                      >
+                        <div
+                          className="w-4 h-4 rounded-full"
+                          style={{ backgroundColor: habit.color || "#ddd" }}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-base font-semibold text-slate-800 mb-0.5 block">
+                          {habit.title}
+                        </span>
+                        <span className="text-sm text-slate-500 block">
+                          {habit.frequency.charAt(0) +
+                            habit.frequency.slice(1).toLowerCase()}
+                        </span>
+                      </div>
                     </div>
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: habit.color }}
-                    ></div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-orange-50 rounded-lg p-4 text-center">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <Flame className="text-orange-600" size={20} />
-                        <span className="text-2xl font-bold text-gray-800">
+                    <div className="flex flex-row justify-around">
+                      <div className="flex flex-col items-center gap-1">
+                        <Flame size={16} className="text-orange-400" />
+                        <span className="text-lg font-bold text-slate-800">
                           {habit.streakData.streak}
                         </span>
+                        <span className="text-xs font-medium text-slate-500">
+                          Current
+                        </span>
                       </div>
-                      <div className="text-xs text-gray-600 font-medium">
-                        Current Streak
-                      </div>
-                    </div>
-
-                    <div className="bg-yellow-50 rounded-lg p-4 text-center">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <Trophy className="text-yellow-600" size={20} />
-                        <span className="text-2xl font-bold text-gray-800">
+                      <div className="flex flex-col items-center gap-1">
+                        <Trophy size={16} className="text-emerald-500" />
+                        <span className="text-lg font-bold text-slate-800">
                           {habit.streakData.bestStreak}
                         </span>
-                      </div>
-                      <div className="text-xs text-gray-600 font-medium">
-                        Best Streak
-                      </div>
-                    </div>
-
-                    <div className="bg-green-50 rounded-lg p-4 text-center">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <CheckCircle className="text-green-600" size={20} />
-                        <span className="text-2xl font-bold text-gray-800">
-                          {habit.streakData.total}
+                        <span className="text-xs font-medium text-slate-500">
+                          Best
                         </span>
                       </div>
-                      <div className="text-xs text-gray-600 font-medium">
-                        Total Completions
+                      <div className="flex flex-col items-center gap-1">
+                        <CheckCircle size={16} className="text-violet-500" />
+                        <span className="text-lg font-bold text-slate-800">
+                          {habit.streakData.total}
+                        </span>
+                        <span className="text-xs font-medium text-slate-500">
+                          Total
+                        </span>
                       </div>
                     </div>
+                    <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                      <span className="text-slate-600 text-sm text-center block">
+                        {habit.streakData.streak === 0
+                          ? "Start your streak today!"
+                          : habit.streakData.streak === 1
+                            ? "Great start! Keep going!"
+                            : habit.streakData.streak < 7
+                              ? "Building momentum! 🚀"
+                              : habit.streakData.streak < 21
+                                ? "You're on fire! 🔥"
+                                : "Habit master! 🏆"}
+                      </span>
+                    </div>
                   </div>
-                </motion.div>
-              ))}
+                ))}
+              </div>
+            </div>
+
+            {/* Motivation Section */}
+            <div className="bg-indigo-50 p-5 rounded-2xl mb-4 border border-indigo-200">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-lg">💡</span>
+                <span className="text-lg font-semibold text-slate-800">
+                  Streak Tips
+                </span>
+              </div>
+              <div className="flex flex-col gap-2">
+                {streakTips.map((tip, index) => (
+                  <span
+                    key={index}
+                    className="text-sm text-slate-600 leading-5"
+                  >
+                    • {tip}
+                  </span>
+                ))}
+              </div>
             </div>
           </>
         )}

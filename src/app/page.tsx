@@ -89,7 +89,7 @@ const Page = () => {
       <Navigation>
         <Link
           href="/streaks"
-          className="ml-auto px-4 py-2 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors"
+          className="px-6 py-2 rounded-xl bg-gradient-to-r from-green-400 to-green-500 text-white font-semibold shadow-lg hover:from-green-600 hover:to-green-600 transition-colors"
         >
           View Streaks
         </Link>
@@ -97,56 +97,83 @@ const Page = () => {
 
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="mb-8">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                Welcome back, {user.name || user.username}!
+              <h2 className="text-3xl font-bold text-slate-800 mb-1">
+                Today&apos;s Habits
               </h2>
-              <p className="text-gray-600">
-                Track your habits and build better routines
+              <p className="text-base text-slate-500">
+                {new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
               </p>
             </div>
             <button
-              className="bg-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-600 transition-colors flex items-center gap-2"
+              className="bg-violet-500 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-violet-600 transition-colors flex items-center gap-2 shadow-lg"
               onClick={() => setShowAddForm(true)}
             >
-              <Plus size={20} />
+              <Plus size={24} />
               Add Habit
             </button>
           </div>
-        </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <TrendingUp className="text-green-600" size={24} />
+          {/* Progress Card */}
+          <div className="bg-white p-5 rounded-2xl mb-8 shadow-lg">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-lg font-semibold text-slate-800">
+                Daily Progress
+              </span>
+              <span className="text-lg font-bold text-violet-500">
+                {completedToday}/{habits.length}
+              </span>
             </div>
-            <div>
-              <p className="text-gray-600 text-sm">Completed Today</p>
-              <p className="text-2xl font-bold text-gray-800">
+            <div className="h-2 bg-slate-100 rounded-full mb-3 overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                style={{
+                  width:
+                    habits.length > 0
+                      ? `${(completedToday / habits.length) * 100}%`
+                      : "0%",
+                }}
+              />
+            </div>
+            <span className="text-sm font-medium text-slate-500 text-center block">
+              {completedToday === habits.length && habits.length > 0
+                ? "🎉 All habits completed today!"
+                : `${habits.length - completedToday} habits remaining`}
+            </span>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-white rounded-2xl p-6 shadow-sm flex flex-col items-center">
+              <div className="p-3 bg-green-100 rounded-lg mb-2">
+                <TrendingUp className="text-green-600" size={28} />
+              </div>
+              <p className="text-slate-500 text-sm">Completed Today</p>
+              <p className="text-2xl font-bold text-slate-800">
                 {completedToday}
               </p>
             </div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <Plus className="text-purple-600" size={24} />
-            </div>
-            <div>
-              <p className="text-gray-600 text-sm">Total Habits</p>
-              <p className="text-2xl font-bold text-gray-800">
+            <div className="bg-white rounded-2xl p-6 shadow-sm flex flex-col items-center">
+              <div className="p-3 bg-violet-100 rounded-lg mb-2">
+                <Plus className="text-violet-600" size={28} />
+              </div>
+              <p className="text-slate-500 text-sm">Total Habits</p>
+              <p className="text-2xl font-bold text-slate-800">
                 {habits.length}
               </p>
             </div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="p-3 bg-orange-100 rounded-lg">
-              <span className="text-orange-600 text-xl">🔥</span>
-            </div>
-            <div>
-              <p className="text-gray-600 text-sm">Total Streak</p>
-              <p className="text-2xl font-bold text-gray-800">{totalStreak}</p>
+            <div className="bg-white rounded-2xl p-6 shadow-sm flex flex-col items-center">
+              <div className="p-3 bg-orange-100 rounded-lg mb-2">
+                <span className="text-orange-600 text-2xl">🔥</span>
+              </div>
+              <p className="text-slate-500 text-sm">Total Streak</p>
+              <p className="text-2xl font-bold text-slate-800">{totalStreak}</p>
             </div>
           </div>
         </div>
@@ -167,16 +194,18 @@ const Page = () => {
               <p className="text-gray-600">Loading habits...</p>
             </div>
           ) : habits.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🎯</div>
-              <h3 className="text-xl font-semibold text-gray mb-2">
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mb-6">
+                <span className="text-4xl">🎯</span>
+              </div>
+              <h3 className="text-xl font-semibold text-slate-800 mb-2">
                 No habits yet
               </h3>
-              <p className="text-gray-600 mb-6">
-                Create your first habit to get started on your journey
+              <p className="text-slate-500 text-center mb-6 max-w-xs">
+                Create your first habit to start building better routines
               </p>
               <button
-                className="bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors"
+                className="bg-violet-500 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-violet-600 transition-colors shadow-lg"
                 onClick={() => setShowAddForm(true)}
               >
                 Add Your First Habit
