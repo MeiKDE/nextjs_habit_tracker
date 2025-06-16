@@ -26,37 +26,43 @@ console.log("🔍 Appwrite account object created and exported");
 export const databases = new Databases(client);
 
 // Server-side configuration
-let serverClient: any;
-let serverAccount: any;
-let serverDatabases: any;
+let serverClient: unknown;
+let serverAccount: unknown;
+let serverDatabases: unknown;
 
 // Initialize server-side services only on server
 if (typeof window === "undefined") {
-  try {
-    // Check if we have the required API key
-    if (!process.env.APPWRITE_API_KEY) {
-      console.warn(
-        "APPWRITE_API_KEY not set - server-side authentication will not work"
+  (async () => {
+    try {
+      // Check if we have the required API key
+      if (!process.env.APPWRITE_API_KEY) {
+        console.warn(
+          "APPWRITE_API_KEY not set - server-side authentication will not work"
+        );
+      } else {
+        const nodeAppwrite = await import("node-appwrite");
+
+        serverClient = new nodeAppwrite.Client()
+          .setEndpoint(APPWRITE_ENDPOINT)
+          .setProject(APPWRITE_PROJECT_ID)
+          .setKey(process.env.APPWRITE_API_KEY || "");
+
+        serverAccount = new nodeAppwrite.Account(
+          serverClient as InstanceType<typeof nodeAppwrite.Client>
+        );
+        serverDatabases = new nodeAppwrite.Databases(
+          serverClient as InstanceType<typeof nodeAppwrite.Client>
+        );
+
+        console.log("Server-side Appwrite clients initialized successfully");
+      }
+    } catch (error) {
+      console.error("Failed to initialize server Appwrite client:", error);
+      console.error(
+        "Make sure node-appwrite is installed and APPWRITE_API_KEY is set"
       );
-    } else {
-      const nodeAppwrite = require("node-appwrite");
-
-      serverClient = new nodeAppwrite.Client()
-        .setEndpoint(APPWRITE_ENDPOINT)
-        .setProject(APPWRITE_PROJECT_ID)
-        .setKey(process.env.APPWRITE_API_KEY || "");
-
-      serverAccount = new nodeAppwrite.Account(serverClient);
-      serverDatabases = new nodeAppwrite.Databases(serverClient);
-
-      console.log("Server-side Appwrite clients initialized successfully");
     }
-  } catch (error) {
-    console.error("Failed to initialize server Appwrite client:", error);
-    console.error(
-      "Make sure node-appwrite is installed and APPWRITE_API_KEY is set"
-    );
-  }
+  })();
 }
 
 export { serverClient, serverAccount, serverDatabases };

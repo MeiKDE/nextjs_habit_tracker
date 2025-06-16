@@ -11,6 +11,7 @@ import AddHabitForm from "@/components/AddHabitForm";
 import { HabitsService } from "@/lib/habits-appwrite";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { HabitCompletion } from "@/types";
 
 const Page = () => {
   const { user, loading } = useAuth();
@@ -40,7 +41,7 @@ const Page = () => {
   }
 
   const completedToday = habits.filter((habit) =>
-    habit.completions?.some((completion: any) => {
+    habit.completions?.some((completion: HabitCompletion) => {
       const today = new Date();
       const completedAt = new Date(completion.completedAt);
       return completedAt.toDateString() === today.toDateString();

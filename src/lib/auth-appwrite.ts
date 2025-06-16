@@ -52,7 +52,13 @@ export class AuthService {
         session,
       };
     } catch (error: any) {
-      throw new Error(error.message || "Failed to sign up");
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to sign up"
+        );
+      } else {
+        throw new Error("Failed to sign up");
+      }
     }
   }
 
@@ -101,16 +107,23 @@ export class AuthService {
         shouldCreateNewSession = true;
       }
     } catch (error: any) {
-      // Handle guest user errors gracefully - this is expected when no session exists
-      if (isGuestUserError(error)) {
-        console.log(
-          "No existing session found (user is guest) - normal for fresh login"
-        );
-        shouldCreateNewSession = true;
+      if (error && typeof error === "object" && "message" in error) {
+        // Handle guest user errors gracefully - this is expected when no session exists
+        if (isGuestUserError(error)) {
+          console.log(
+            "No existing session found (user is guest) - normal for fresh login"
+          );
+          shouldCreateNewSession = true;
+        } else {
+          console.log(
+            "Error checking existing session:",
+            (error as { message: string }).message || error
+          );
+          // Clear any potentially problematic sessions for non-guest errors
+          await this.forceCompleteSessionReset();
+          shouldCreateNewSession = true;
+        }
       } else {
-        console.log("Error checking existing session:", error.message || error);
-        // Clear any potentially problematic sessions for non-guest errors
-        await this.forceCompleteSessionReset();
         shouldCreateNewSession = true;
       }
     }
@@ -151,36 +164,41 @@ export class AuthService {
         } catch (error: any) {
           console.error(`Sign in attempt ${attempts} failed:`, error);
 
-          // If it's a session conflict error, try to clear sessions again
-          if (
-            error.message?.includes("Creation of a session is prohibited") ||
-            error.message?.includes("session is already exists") ||
-            error.type === "user_session_already_exists" ||
-            error.code === 401
-          ) {
-            console.log(
-              "Session conflict detected, clearing sessions again..."
-            );
-
-            if (attempts < maxAttempts) {
-              // Clear sessions more aggressively
-              await this.forceCompleteSessionReset();
-
-              // Wait longer between attempts
-              const waitTime = attempts * 1000; // 1s, 2s, 3s
-              console.log(`Waiting ${waitTime}ms before retry...`);
-              await new Promise((resolve) => setTimeout(resolve, waitTime));
-
-              continue; // Try again
-            } else {
-              console.error("Max attempts reached, giving up");
-              throw new Error(
-                "Unable to create session after multiple attempts. Please try again later."
+          if (error && typeof error === "object" && "message" in error) {
+            // If it's a session conflict error, try to clear sessions again
+            const errMsg = (error as { message: string }).message;
+            if (
+              errMsg?.includes("Creation of a session is prohibited") ||
+              errMsg?.includes("session is already exists") ||
+              (error as any).type === "user_session_already_exists" ||
+              (error as any).code === 401
+            ) {
+              console.log(
+                "Session conflict detected, clearing sessions again..."
               );
+
+              if (attempts < maxAttempts) {
+                // Clear sessions more aggressively
+                await this.forceCompleteSessionReset();
+
+                // Wait longer between attempts
+                const waitTime = attempts * 1000; // 1s, 2s, 3s
+                console.log(`Waiting ${waitTime}ms before retry...`);
+                await new Promise((resolve) => setTimeout(resolve, waitTime));
+
+                continue; // Try again
+              } else {
+                console.error("Max attempts reached, giving up");
+                throw new Error(
+                  "Unable to create session after multiple attempts. Please try again later."
+                );
+              }
+            } else {
+              // Non-session error, throw immediately
+              throw new Error(errMsg || "Failed to sign in");
             }
           } else {
-            // Non-session error, throw immediately
-            throw new Error(error.message || "Failed to sign in");
+            throw new Error("Failed to sign in");
           }
         }
       }

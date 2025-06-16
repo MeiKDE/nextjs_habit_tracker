@@ -1,24 +1,31 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { HabitsService } from "@/lib/habits-appwrite";
+import { Habit, HabitCompletion } from "@/types";
 
 const useHabits = (reloadTrigger?: number) => {
   const { user } = useAuth();
-  const [habits, setHabits] = useState<any[]>([]);
+  const [habits, setHabits] = useState<
+    (Habit & { completions: HabitCompletion[] })[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchHabits = async () => {
+  const fetchHabits = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
       const data = await HabitsService.getUserHabits(user.$id);
       setHabits(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "message" in err) {
+        setError((err as { message: string }).message);
+      } else {
+        setError("Failed to fetch habits");
+      }
     }
     setLoading(false);
-  };
+  }, [user]);
 
   const completeHabit = async (habitId: string) => {
     if (!user) return;
@@ -34,7 +41,7 @@ const useHabits = (reloadTrigger?: number) => {
 
   useEffect(() => {
     fetchHabits();
-  }, [user, reloadTrigger]);
+  }, [user, reloadTrigger, fetchHabits]);
 
   return { habits, loading, error, completeHabit, deleteHabit };
 };

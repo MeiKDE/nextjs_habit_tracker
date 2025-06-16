@@ -70,7 +70,9 @@ const AddHabitForm: React.FC<AddHabitFormProps> = ({
                     ? "bg-violet-50 border-violet-500"
                     : "border-slate-200"
                 }`}
-                onClick={() => setFrequency(freq as any)}
+                onClick={() =>
+                  setFrequency(freq as "DAILY" | "WEEKLY" | "MONTHLY")
+                }
               >
                 <span
                   className={`text-base font-medium ${frequency === freq ? "text-violet-600 font-semibold" : "text-slate-500"}`}

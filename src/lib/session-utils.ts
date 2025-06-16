@@ -3,13 +3,17 @@ import { account } from "./appwrite";
 /**
  * Check if an error is a guest user error (when user is not authenticated)
  */
-export function isGuestUserError(error: any): boolean {
-  return (
-    error.code === 401 &&
-    (error.type === "general_unauthorized_scope" ||
-      error.message?.includes("missing scope") ||
-      error.message?.includes("guests"))
-  );
+export function isGuestUserError(error: unknown): boolean {
+  if (error && typeof error === "object") {
+    const err = error as { code?: number; type?: string; message?: string };
+    return (
+      err.code === 401 &&
+      (err.type === "general_unauthorized_scope" ||
+        !!err.message?.includes("missing scope") ||
+        !!err.message?.includes("guests"))
+    );
+  }
+  return false;
 }
 
 /**
@@ -30,7 +34,7 @@ export class SessionUtils {
           name: user.name,
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle guest user errors gracefully
       if (isGuestUserError(error)) {
         return {
@@ -39,11 +43,14 @@ export class SessionUtils {
           error: "No session (guest user)",
         };
       }
-
+      let message = "Unknown error";
+      if (error && typeof error === "object" && "message" in error) {
+        message = (error as { message?: string }).message || message;
+      }
       return {
         hasSession: false,
         user: null,
-        error: error.message || "Unknown error",
+        error: message,
       };
     }
   }
@@ -70,11 +77,15 @@ export class SessionUtils {
       try {
         await method.action();
         results.push({ method: method.name, success: true });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        let message = "Unknown error";
+        if (error && typeof error === "object" && "message" in error) {
+          message = (error as { message?: string }).message || message;
+        }
         results.push({
           method: method.name,
           success: false,
-          error: error.message,
+          error: message,
         });
       }
     }
@@ -134,11 +145,15 @@ export class SessionUtils {
           };
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      let message = "Unknown error";
+      if (error && typeof error === "object" && "message" in error) {
+        message = (error as { message?: string }).message || message;
+      }
       return {
         canProceed: false,
         needsNewSession: true,
-        message: `Error preparing for sign-in: ${error.message}`,
+        message: `Error preparing for sign-in: ${message}`,
       };
     }
   }
@@ -182,7 +197,7 @@ export async function completeAuthReset(): Promise<{
   try {
     await account.deleteSessions();
     results.push({ step: "Clear Appwrite sessions", success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (isGuestUserError(error)) {
       results.push({
         step: "Clear Appwrite sessions",
@@ -190,10 +205,14 @@ export async function completeAuthReset(): Promise<{
         error: "No sessions to clear (guest)",
       });
     } else {
+      let message = "Unknown error";
+      if (error && typeof error === "object" && "message" in error) {
+        message = (error as { message?: string }).message || message;
+      }
       results.push({
         step: "Clear Appwrite sessions",
         success: false,
-        error: error.message,
+        error: message,
       });
     }
   }
@@ -234,11 +253,15 @@ export async function completeAuthReset(): Promise<{
         "a_session_console=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     }
     results.push({ step: "Clear browser storage", success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    let message = "Unknown error";
+    if (error && typeof error === "object" && "message" in error) {
+      message = (error as { message?: string }).message || message;
+    }
     results.push({
       step: "Clear browser storage",
       success: false,
-      error: error.message,
+      error: message,
     });
   }
 
@@ -249,11 +272,15 @@ export async function completeAuthReset(): Promise<{
       credentials: "include",
     });
     results.push({ step: "Clear JWT sessions", success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    let message = "Unknown error";
+    if (error && typeof error === "object" && "message" in error) {
+      message = (error as { message?: string }).message || message;
+    }
     results.push({
       step: "Clear JWT sessions",
       success: false,
-      error: error.message,
+      error: message,
     });
   }
 
@@ -269,7 +296,7 @@ export async function completeAuthReset(): Promise<{
         error: `Session still active for ${sessionCheck.user?.email}`,
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (isGuestUserError(error)) {
       results.push({
         step: "Verify cleanup",
@@ -277,10 +304,14 @@ export async function completeAuthReset(): Promise<{
         error: "Confirmed guest user state",
       });
     } else {
+      let message = "Unknown error";
+      if (error && typeof error === "object" && "message" in error) {
+        message = (error as { message?: string }).message || message;
+      }
       results.push({
         step: "Verify cleanup",
         success: false,
-        error: error.message,
+        error: message,
       });
     }
   }

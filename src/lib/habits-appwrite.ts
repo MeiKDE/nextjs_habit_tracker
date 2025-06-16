@@ -39,8 +39,14 @@ export class HabitsService {
       );
 
       return habit as unknown as Habit;
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to create habit");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to create habit"
+        );
+      } else {
+        throw new Error("Failed to create habit");
+      }
     }
   }
 
@@ -71,8 +77,14 @@ export class HabitsService {
       return habitsWithCompletions as unknown as (Habit & {
         completions: HabitCompletion[];
       })[];
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to fetch habits");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to fetch habits"
+        );
+      } else {
+        throw new Error("Failed to fetch habits");
+      }
     }
   }
 
@@ -86,7 +98,7 @@ export class HabitsService {
       );
 
       // Verify ownership
-      if ((habit as any).userId !== userId) {
+      if ((habit as unknown as { userId: string }).userId !== userId) {
         throw new Error("Unauthorized");
       }
 
@@ -96,8 +108,14 @@ export class HabitsService {
         ...habit,
         completions,
       } as unknown as Habit & { completions: HabitCompletion[] };
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to fetch habit");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to fetch habit"
+        );
+      } else {
+        throw new Error("Failed to fetch habit");
+      }
     }
   }
 
@@ -115,7 +133,7 @@ export class HabitsService {
         habitId
       );
 
-      if ((existingHabit as any).userId !== userId) {
+      if ((existingHabit as unknown as { userId: string }).userId !== userId) {
         throw new Error("Unauthorized");
       }
 
@@ -130,8 +148,14 @@ export class HabitsService {
       );
 
       return updatedHabit as unknown as Habit;
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to update habit");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to update habit"
+        );
+      } else {
+        throw new Error("Failed to update habit");
+      }
     }
   }
 
@@ -139,8 +163,14 @@ export class HabitsService {
   static async deleteHabit(habitId: string, userId: string) {
     try {
       return await this.updateHabit(habitId, userId, { isActive: false });
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to delete habit");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to delete habit"
+        );
+      } else {
+        throw new Error("Failed to delete habit");
+      }
     }
   }
 
@@ -154,8 +184,15 @@ export class HabitsService {
       );
 
       return completions.documents as unknown as HabitCompletion[];
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to fetch completions");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message ||
+            "Failed to fetch completions"
+        );
+      } else {
+        throw new Error("Failed to fetch completions");
+      }
     }
   }
 
@@ -169,7 +206,7 @@ export class HabitsService {
         habitId
       );
 
-      if ((habit as any).userId !== userId) {
+      if ((habit as unknown as { userId: string }).userId !== userId) {
         throw new Error("Unauthorized");
       }
 
@@ -193,8 +230,14 @@ export class HabitsService {
       });
 
       return completion as unknown as HabitCompletion;
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to complete habit");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to complete habit"
+        );
+      } else {
+        throw new Error("Failed to complete habit");
+      }
     }
   }
 
@@ -214,7 +257,7 @@ export class HabitsService {
         (completion as any).habitId
       );
 
-      if ((habit as any).userId !== userId) {
+      if ((habit as unknown as { userId: string }).userId !== userId) {
         throw new Error("Unauthorized");
       }
 
@@ -225,8 +268,15 @@ export class HabitsService {
       );
 
       return true;
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to delete completion");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message ||
+            "Failed to delete completion"
+        );
+      } else {
+        throw new Error("Failed to delete completion");
+      }
     }
   }
 }
@@ -236,7 +286,7 @@ export class ServerHabitsService {
   // Similar methods but using serverDatabases
   static async getUserHabits(userId: string) {
     try {
-      const habits = await serverDatabases.listDocuments(
+      const habits = await (serverDatabases as any).listDocuments(
         DATABASE_ID,
         COLLECTIONS.HABITS,
         [
@@ -249,7 +299,7 @@ export class ServerHabitsService {
       // Get completions for each habit
       const habitsWithCompletions = await Promise.all(
         habits.documents.map(async (habit: any) => {
-          const completions = await serverDatabases.listDocuments(
+          const completions = await (serverDatabases as any).listDocuments(
             DATABASE_ID,
             COLLECTIONS.HABIT_COMPLETIONS,
             [Query.equal("habitId", habit.$id), Query.orderDesc("completedAt")]
@@ -264,8 +314,14 @@ export class ServerHabitsService {
       return habitsWithCompletions as unknown as (Habit & {
         completions: HabitCompletion[];
       })[];
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to fetch habits");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to fetch habits"
+        );
+      } else {
+        throw new Error("Failed to fetch habits");
+      }
     }
   }
 
@@ -288,7 +344,7 @@ export class ServerHabitsService {
         userId,
       };
 
-      const habit = await serverDatabases.createDocument(
+      const habit = await (serverDatabases as any).createDocument(
         DATABASE_ID,
         COLLECTIONS.HABITS,
         ID.unique(),
@@ -296,7 +352,7 @@ export class ServerHabitsService {
       );
 
       // Get completions (will be empty for new habit)
-      const completions = await serverDatabases.listDocuments(
+      const completions = await (serverDatabases as any).listDocuments(
         DATABASE_ID,
         COLLECTIONS.HABIT_COMPLETIONS,
         [Query.equal("habitId", habit.$id)]
@@ -306,8 +362,14 @@ export class ServerHabitsService {
         ...habit,
         completions: completions.documents,
       } as unknown as Habit & { completions: HabitCompletion[] };
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to create habit");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to create habit"
+        );
+      } else {
+        throw new Error("Failed to create habit");
+      }
     }
   }
 
@@ -319,17 +381,17 @@ export class ServerHabitsService {
   ) {
     try {
       // First verify ownership
-      const existingHabit = await serverDatabases.getDocument(
+      const existingHabit = await (serverDatabases as any).getDocument(
         DATABASE_ID,
         COLLECTIONS.HABITS,
         habitId
       );
 
-      if ((existingHabit as any).userId !== userId) {
+      if ((existingHabit as unknown as { userId: string }).userId !== userId) {
         throw new Error("Unauthorized");
       }
 
-      const updatedHabit = await serverDatabases.updateDocument(
+      const updatedHabit = await (serverDatabases as any).updateDocument(
         DATABASE_ID,
         COLLECTIONS.HABITS,
         habitId,
@@ -340,8 +402,14 @@ export class ServerHabitsService {
       );
 
       return updatedHabit as unknown as Habit;
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to update habit");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to update habit"
+        );
+      } else {
+        throw new Error("Failed to update habit");
+      }
     }
   }
 
@@ -349,8 +417,14 @@ export class ServerHabitsService {
   static async deleteHabit(habitId: string, userId: string) {
     try {
       return await this.updateHabit(habitId, userId, { isActive: false });
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to delete habit");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to delete habit"
+        );
+      } else {
+        throw new Error("Failed to delete habit");
+      }
     }
   }
 
@@ -358,18 +432,18 @@ export class ServerHabitsService {
   static async completeHabit(habitId: string, userId: string, notes?: string) {
     try {
       // First verify habit ownership
-      const habit = await serverDatabases.getDocument(
+      const habit = await (serverDatabases as any).getDocument(
         DATABASE_ID,
         COLLECTIONS.HABITS,
         habitId
       );
 
-      if ((habit as any).userId !== userId) {
+      if ((habit as unknown as { userId: string }).userId !== userId) {
         throw new Error("Unauthorized");
       }
 
       // Create completion record
-      const completion = await serverDatabases.createDocument(
+      const completion = await (serverDatabases as any).createDocument(
         DATABASE_ID,
         COLLECTIONS.HABIT_COMPLETIONS,
         ID.unique(),
@@ -382,7 +456,7 @@ export class ServerHabitsService {
       );
 
       // Update habit's last completed date and potentially streak count
-      await serverDatabases.updateDocument(
+      await (serverDatabases as any).updateDocument(
         DATABASE_ID,
         COLLECTIONS.HABITS,
         habitId,
@@ -393,23 +467,36 @@ export class ServerHabitsService {
       );
 
       return completion as unknown as HabitCompletion;
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to complete habit");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to complete habit"
+        );
+      } else {
+        throw new Error("Failed to complete habit");
+      }
     }
   }
 
   // Get habit completions
   static async getHabitCompletions(habitId: string) {
     try {
-      const completions = await serverDatabases.listDocuments(
+      const completions = await (serverDatabases as any).listDocuments(
         DATABASE_ID,
         COLLECTIONS.HABIT_COMPLETIONS,
         [Query.equal("habitId", habitId), Query.orderDesc("completedAt")]
       );
 
       return completions.documents as unknown as HabitCompletion[];
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to fetch completions");
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message ||
+            "Failed to fetch completions"
+        );
+      } else {
+        throw new Error("Failed to fetch completions");
+      }
     }
   }
 }

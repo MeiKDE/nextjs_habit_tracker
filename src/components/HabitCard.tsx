@@ -1,11 +1,22 @@
 "use client";
 import React from "react";
 import { CheckCircle, Trash2 } from "lucide-react";
+import { Habit, HabitCompletion } from "@/types";
 
-const HabitCard = ({ habit, onComplete, onDelete }: any) => {
+interface HabitCardProps {
+  habit: Habit;
+  onComplete: (habitId: string) => void;
+  onDelete: (habitId: string) => void;
+}
+
+const HabitCard: React.FC<HabitCardProps> = ({
+  habit,
+  onComplete,
+  onDelete,
+}) => {
   const streak = habit.streakCount || 0;
   const frequency = habit.frequency || "DAILY";
-  const completed = habit.completions?.some((c: any) => {
+  const completed = habit.completions?.some((c: HabitCompletion) => {
     const today = new Date().toDateString();
     return new Date(c.completedAt).toDateString() === today;
   });

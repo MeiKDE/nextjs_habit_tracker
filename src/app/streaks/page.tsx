@@ -2,7 +2,6 @@
 
 import React, { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { motion } from "framer-motion";
 import { TrendingUp, Flame, Trophy, CheckCircle } from "lucide-react";
 import { useStreaks } from "@/hooks/useStreaks";
 import Navigation from "@/components/Navigation";
@@ -46,19 +45,6 @@ const StreaksPage = () => {
         return "🥉";
       default:
         return `${index + 1}`;
-    }
-  };
-
-  const getRankColor = (index: number) => {
-    switch (index) {
-      case 0:
-        return "bg-yellow-100 text-yellow-800";
-      case 1:
-        return "bg-gray-100 text-gray-800";
-      case 2:
-        return "bg-orange-100 text-orange-800";
-      default:
-        return "bg-purple-100 text-purple-800";
     }
   };
 
