@@ -53,7 +53,7 @@ const Page = () => {
   const handleCompleteHabit = async (habitId: string) => {
     try {
       await completeHabit(habitId);
-    } catch {
+    } catch (err) {
       toast.error("Failed to complete habit");
     }
   };
@@ -61,7 +61,7 @@ const Page = () => {
   const handleDeleteHabit = async (habitId: string) => {
     try {
       await deleteHabit(habitId);
-    } catch {
+    } catch (err) {
       toast.error("Failed to delete habit");
     }
   };
@@ -82,7 +82,7 @@ const Page = () => {
       toast.success("Habit added!");
       setShowAddForm(false);
       setReloadHabits((prev) => prev + 1);
-    } catch {
+    } catch (err) {
       toast.error("Failed to add habit");
     }
   };
@@ -185,7 +185,7 @@ const Page = () => {
         {/* Habits List */}
         <div className="mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
-            Today&apos;s Habits
+            Today's Habits
           </h2>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">

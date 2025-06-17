@@ -9,6 +9,7 @@ import {
   COLLECTIONS,
   User,
 } from "./appwrite";
+import { cookies } from "next/headers";
 import { isGuestUserError } from "./session-utils";
 
 // Authentication service using Appwrite
@@ -50,8 +51,14 @@ export class AuthService {
         user: userDoc,
         session,
       };
-    } catch {
-      throw new Error("Failed to sign up");
+    } catch (error: any) {
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error(
+          (error as { message: string }).message || "Failed to sign up"
+        );
+      } else {
+        throw new Error("Failed to sign up");
+      }
     }
   }
 
@@ -89,7 +96,7 @@ export class AuthService {
             user: userDoc,
             session: existingSession,
           };
-        } catch {
+        } catch (sessionError) {
           console.log("Existing session is invalid, will create new one");
           shouldCreateNewSession = true;
         }
@@ -99,8 +106,26 @@ export class AuthService {
         console.log("Previous session cleared");
         shouldCreateNewSession = true;
       }
-    } catch {
-      shouldCreateNewSession = true;
+    } catch (error: any) {
+      if (error && typeof error === "object" && "message" in error) {
+        // Handle guest user errors gracefully - this is expected when no session exists
+        if (isGuestUserError(error)) {
+          console.log(
+            "No existing session found (user is guest) - normal for fresh login"
+          );
+          shouldCreateNewSession = true;
+        } else {
+          console.log(
+            "Error checking existing session:",
+            (error as { message: string }).message || error
+          );
+          // Clear any potentially problematic sessions for non-guest errors
+          await this.forceCompleteSessionReset();
+          shouldCreateNewSession = true;
+        }
+      } else {
+        shouldCreateNewSession = true;
+      }
     }
 
     // Only create new session if needed
@@ -136,11 +161,45 @@ export class AuthService {
             user: userDoc,
             session,
           };
-        } catch {
-          console.error(`Sign in attempt ${attempts} failed.`);
+        } catch (error: any) {
+          console.error(`Sign in attempt ${attempts} failed:`, error);
 
-          // No error variable available, just throw a generic error
-          throw new Error("Failed to sign in");
+          if (error && typeof error === "object" && "message" in error) {
+            // If it's a session conflict error, try to clear sessions again
+            const errMsg = (error as { message: string }).message;
+            if (
+              errMsg?.includes("Creation of a session is prohibited") ||
+              errMsg?.includes("session is already exists") ||
+              (error as any).type === "user_session_already_exists" ||
+              (error as any).code === 401
+            ) {
+              console.log(
+                "Session conflict detected, clearing sessions again..."
+              );
+
+              if (attempts < maxAttempts) {
+                // Clear sessions more aggressively
+                await this.forceCompleteSessionReset();
+
+                // Wait longer between attempts
+                const waitTime = attempts * 1000; // 1s, 2s, 3s
+                console.log(`Waiting ${waitTime}ms before retry...`);
+                await new Promise((resolve) => setTimeout(resolve, waitTime));
+
+                continue; // Try again
+              } else {
+                console.error("Max attempts reached, giving up");
+                throw new Error(
+                  "Unable to create session after multiple attempts. Please try again later."
+                );
+              }
+            } else {
+              // Non-session error, throw immediately
+              throw new Error(errMsg || "Failed to sign in");
+            }
+          } else {
+            throw new Error("Failed to sign in");
+          }
         }
       }
 
@@ -155,8 +214,8 @@ export class AuthService {
   static async signOut() {
     try {
       await account.deleteSession("current");
-    } catch {
-      throw new Error("Failed to sign out");
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to sign out");
     }
   }
 
@@ -179,7 +238,7 @@ export class AuthService {
       );
 
       return userDoc as unknown as User;
-    } catch {
+    } catch (error) {
       return null;
     }
   }
@@ -217,10 +276,10 @@ export class AuthService {
       // In a production app, you might want to store session mappings in your database
 
       // Use node-appwrite with API key to validate the session differently
-      const nodeAppwrite = await import("node-appwrite");
+      const nodeAppwrite = require("node-appwrite");
 
       // Create a client with just the API key (not session-based)
-      new nodeAppwrite.Client()
+      const serverClient = new nodeAppwrite.Client()
         .setEndpoint(
           process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ||
             "https://cloud.appwrite.io/v1"
@@ -230,8 +289,8 @@ export class AuthService {
 
       console.log("getServerUser: Client configured with API key approach");
 
-      // const adminAccount = new nodeAppwrite.Account(serverClient);
-      // const adminDatabases = new nodeAppwrite.Databases(serverClient);
+      const adminAccount = new nodeAppwrite.Account(serverClient);
+      const adminDatabases = new nodeAppwrite.Databases(serverClient);
 
       // Since we can't validate the session directly, we'll need to trust the client
       // and extract the user ID from a different source or use a different approach
@@ -245,24 +304,12 @@ export class AuthService {
       // We'll modify the API endpoints to work differently
       console.log("getServerUser: sessions.read not available, returning null");
       return null;
-    } catch (error) {
+    } catch (error: any) {
       console.error("getServerUser error details:", {
-        message:
-          error && typeof error === "object" && "message" in error
-            ? (error as { message?: string }).message
-            : undefined,
-        code:
-          error && typeof error === "object" && "code" in error
-            ? (error as { code?: number }).code
-            : undefined,
-        type:
-          error && typeof error === "object" && "type" in error
-            ? (error as { type?: string }).type
-            : undefined,
-        response:
-          error && typeof error === "object" && "response" in error
-            ? (error as { response?: unknown }).response
-            : undefined,
+        message: error.message,
+        code: error.code,
+        type: error.type,
+        response: error.response,
         sessionIdPrefix: sessionId
           ? sessionId.substring(0, 10) + "..."
           : "none",
@@ -282,7 +329,7 @@ export class AuthService {
       );
 
       return result.documents.length === 0;
-    } catch {
+    } catch (error) {
       return false;
     }
   }
@@ -297,7 +344,7 @@ export class AuthService {
       );
 
       return result.documents.length === 0;
-    } catch {
+    } catch (error) {
       return false;
     }
   }
@@ -307,7 +354,7 @@ export class AuthService {
     try {
       const session = await account.getSession("current");
       return !!(session && session.$id);
-    } catch {
+    } catch (error) {
       return false;
     }
   }
@@ -335,9 +382,13 @@ export class AuthService {
               console.log("Found active user:", user.email);
               await account.deleteSession("current");
             }
-          } catch {
+          } catch (e: any) {
             // Handle guest user errors gracefully
-            console.log("No user session to clear (guest user)");
+            if (isGuestUserError(e)) {
+              console.log("No user session to clear (guest user)");
+            } else {
+              console.log("Error checking user session:", e.message);
+            }
           }
         },
       },
@@ -349,7 +400,8 @@ export class AuthService {
         console.log(`Executing: ${cleanup.name}`);
         await cleanup.method();
         console.log(`✓ ${cleanup.name} succeeded`);
-      } catch {
+      } catch (error: any) {
+        console.log(`✗ ${cleanup.name} failed:`, error.message);
         // Continue with other methods
       }
     }
@@ -365,9 +417,14 @@ export class AuthService {
       } else {
         console.log("No session found - this shouldn't happen");
       }
-    } catch {
-      // Could not verify session cleanup
-      console.log("Session verification error");
+    } catch (error: any) {
+      if (isGuestUserError(error)) {
+        console.log(
+          "✓ Session cleanup verified - no active session (guest user)"
+        );
+      } else {
+        console.log("Session verification error:", error.message);
+      }
     }
 
     console.log("=== SESSION RESET COMPLETE ===");
@@ -379,9 +436,12 @@ export class AuthService {
       console.log("Clearing all sessions...");
       await this.forceCompleteSessionReset();
       console.log("All sessions cleared successfully");
-    } catch {
+    } catch (error: any) {
       // Ignore errors if no sessions exist
-      console.log("No sessions to clear or error clearing sessions");
+      console.log(
+        "No sessions to clear or error clearing sessions:",
+        error.message
+      );
     }
   }
 

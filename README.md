@@ -200,39 +200,3 @@ Make sure to add your environment variables in the Vercel dashboard.
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
-
-## PWA Requirements
-
-To enable Progressive Web App (PWA) support, add the following files to your `public/` directory:
-
-- `manifest.json` (see below for a sample)
-- `icon-192x192.png` (192x192 PNG icon)
-- `icon-512x512.png` (512x512 PNG icon)
-- `favicon.ico` (for browser tab icon)
-- `og-image.png` (for social sharing, 1200x630 recommended)
-
-### Sample `manifest.json`
-
-```json
-{
-  "name": "Habit Tracker",
-  "short_name": "Habits",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
-  "description": "Track and build better habits with ease.",
-  "icons": [
-    {
-      "src": "/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
-}
-```
