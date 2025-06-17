@@ -254,7 +254,7 @@ export class HabitsService {
       const habit = await databases.getDocument(
         DATABASE_ID,
         COLLECTIONS.HABITS,
-        (completion as any).habitId
+        (completion as unknown as HabitCompletion).habitId
       );
 
       if ((habit as unknown as { userId: string }).userId !== userId) {
@@ -286,24 +286,23 @@ export class ServerHabitsService {
   // Similar methods but using serverDatabases
   static async getUserHabits(userId: string) {
     try {
-      const habits = await (serverDatabases as any).listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.HABITS,
-        [
-          Query.equal("userId", userId),
-          Query.equal("isActive", true),
-          Query.orderDesc("createdAt"),
-        ]
-      );
+      const habits = await (
+        serverDatabases as unknown as typeof databases
+      ).listDocuments(DATABASE_ID, COLLECTIONS.HABITS, [
+        Query.equal("userId", userId),
+        Query.equal("isActive", true),
+        Query.orderDesc("createdAt"),
+      ]);
 
       // Get completions for each habit
       const habitsWithCompletions = await Promise.all(
-        habits.documents.map(async (habit: any) => {
-          const completions = await (serverDatabases as any).listDocuments(
-            DATABASE_ID,
-            COLLECTIONS.HABIT_COMPLETIONS,
-            [Query.equal("habitId", habit.$id), Query.orderDesc("completedAt")]
-          );
+        habits.documents.map(async (habit) => {
+          const completions = await (
+            serverDatabases as unknown as typeof databases
+          ).listDocuments(DATABASE_ID, COLLECTIONS.HABIT_COMPLETIONS, [
+            Query.equal("habitId", habit.$id),
+            Query.orderDesc("completedAt"),
+          ]);
           return {
             ...habit,
             completions: completions.documents,
@@ -344,19 +343,16 @@ export class ServerHabitsService {
         userId,
       };
 
-      const habit = await (serverDatabases as any).createDocument(
-        DATABASE_ID,
-        COLLECTIONS.HABITS,
-        ID.unique(),
-        habitData
-      );
+      const habit = await (
+        serverDatabases as unknown as typeof databases
+      ).createDocument(DATABASE_ID, COLLECTIONS.HABITS, ID.unique(), habitData);
 
       // Get completions (will be empty for new habit)
-      const completions = await (serverDatabases as any).listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.HABIT_COMPLETIONS,
-        [Query.equal("habitId", habit.$id)]
-      );
+      const completions = await (
+        serverDatabases as unknown as typeof databases
+      ).listDocuments(DATABASE_ID, COLLECTIONS.HABIT_COMPLETIONS, [
+        Query.equal("habitId", habit.$id),
+      ]);
 
       return {
         ...habit,
@@ -381,25 +377,20 @@ export class ServerHabitsService {
   ) {
     try {
       // First verify ownership
-      const existingHabit = await (serverDatabases as any).getDocument(
-        DATABASE_ID,
-        COLLECTIONS.HABITS,
-        habitId
-      );
+      const existingHabit = await (
+        serverDatabases as unknown as typeof databases
+      ).getDocument(DATABASE_ID, COLLECTIONS.HABITS, habitId);
 
       if ((existingHabit as unknown as { userId: string }).userId !== userId) {
         throw new Error("Unauthorized");
       }
 
-      const updatedHabit = await (serverDatabases as any).updateDocument(
-        DATABASE_ID,
-        COLLECTIONS.HABITS,
-        habitId,
-        {
-          ...updates,
-          updatedAt: new Date().toISOString(),
-        }
-      );
+      const updatedHabit = await (
+        serverDatabases as unknown as typeof databases
+      ).updateDocument(DATABASE_ID, COLLECTIONS.HABITS, habitId, {
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      });
 
       return updatedHabit as unknown as Habit;
     } catch (error: unknown) {
@@ -432,18 +423,18 @@ export class ServerHabitsService {
   static async completeHabit(habitId: string, userId: string, notes?: string) {
     try {
       // First verify habit ownership
-      const habit = await (serverDatabases as any).getDocument(
-        DATABASE_ID,
-        COLLECTIONS.HABITS,
-        habitId
-      );
+      const habit = await (
+        serverDatabases as unknown as typeof databases
+      ).getDocument(DATABASE_ID, COLLECTIONS.HABITS, habitId);
 
       if ((habit as unknown as { userId: string }).userId !== userId) {
         throw new Error("Unauthorized");
       }
 
       // Create completion record
-      const completion = await (serverDatabases as any).createDocument(
+      const completion = await (
+        serverDatabases as unknown as typeof databases
+      ).createDocument(
         DATABASE_ID,
         COLLECTIONS.HABIT_COMPLETIONS,
         ID.unique(),
@@ -456,7 +447,7 @@ export class ServerHabitsService {
       );
 
       // Update habit's last completed date and potentially streak count
-      await (serverDatabases as any).updateDocument(
+      await (serverDatabases as unknown as typeof databases).updateDocument(
         DATABASE_ID,
         COLLECTIONS.HABITS,
         habitId,
@@ -481,11 +472,12 @@ export class ServerHabitsService {
   // Get habit completions
   static async getHabitCompletions(habitId: string) {
     try {
-      const completions = await (serverDatabases as any).listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.HABIT_COMPLETIONS,
-        [Query.equal("habitId", habitId), Query.orderDesc("completedAt")]
-      );
+      const completions = await (
+        serverDatabases as unknown as typeof databases
+      ).listDocuments(DATABASE_ID, COLLECTIONS.HABIT_COMPLETIONS, [
+        Query.equal("habitId", habitId),
+        Query.orderDesc("completedAt"),
+      ]);
 
       return completions.documents as unknown as HabitCompletion[];
     } catch (error: unknown) {

@@ -54,7 +54,7 @@ const Page = () => {
     try {
       await completeHabit(habitId);
     } catch (err) {
-      toast.error("Failed to complete habit");
+      toast.error(`Failed to complete habit, ${err}`);
     }
   };
 
@@ -62,7 +62,7 @@ const Page = () => {
     try {
       await deleteHabit(habitId);
     } catch (err) {
-      toast.error("Failed to delete habit");
+      toast.error(`Failed to delete habit, ${err}`);
     }
   };
 
@@ -83,7 +83,7 @@ const Page = () => {
       setShowAddForm(false);
       setReloadHabits((prev) => prev + 1);
     } catch (err) {
-      toast.error("Failed to add habit");
+      toast.error(`Failed to add habit, ${err}`);
     }
   };
 
@@ -185,7 +185,7 @@ const Page = () => {
         {/* Habits List */}
         <div className="mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
-            Today's Habits
+            Today&apos;s Habits
           </h2>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
